@@ -10,7 +10,7 @@ locale                   : "en-US"
 title                    : "Prakash Mishra"
 title_separator          : "-"
 name                     : &name "Prakash Mishra"
-description              : &description "PhD Candidate in Applied Economics"
+description              : &description "Assistant Professor of Economics, California Institute of Technology"
 url                      : https://mishrap42.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "mishrap42/mishrap42.github.io"
@@ -83,11 +83,11 @@ author:
   name             : "Prakash Mishra"
   avatar           : "IMG_2565.jpg"
   bio              : "Environmental and Trade Economist"
-  location         : "Philadelphia, PA"
-  employer         :
+  location         : "Pasadena, CA"
+  employer         : "California Institute of Technology"
   pubmed           : 
   googlescholar    : 
-  email            : mishrap@wharton.upenn.edu
+  email            : prakashm@caltech.edu
   researchgate     :  # example: "https://www.researchgate.net/profile/yourprofile"
   uri              :
   bitbucket        :
@@ -103,13 +103,13 @@ author:
   impactstory      : #"https://profiles.impactstory.org/u/xxxx-xxxx-xxxx-xxxx"
   lastfm           :
   linkedin         :
-  orcid            : "http://orcid.org/yourorcidurl"
+  orcid            :
   pinterest        :
   soundcloud       :
   stackoverflow    : # http://stackoverflow.com/users/123456/username
   steam            :
   tumblr           :
-  twitter          : "PrakashDoesEcon"
+  twitter          :
   vine             :
   weibo            :
   xing             :
@@ -130,6 +130,7 @@ exclude:
   - .jekyll-assets-cache
   - .sass-cache
   - CHANGELOG
+  - CONTRIBUTING.md
   - Capfile
   - Gemfile
   - Gruntfile.js
@@ -142,8 +143,10 @@ exclude:
   - config
   - gulpfile.js
   - log
+  - markdown_generator
   - node_modules
   - package.json
+  - serve.sh
   - tmp
   - vendor
 keep_files:
