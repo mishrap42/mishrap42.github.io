@@ -11,6 +11,9 @@ source "https://rubygems.org"
 
 gem "github-pages", group: :jekyll_plugins
 
+# Required by `jekyll serve` on Ruby >= 3.0 (webrick left stdlib)
+gem "webrick", "~> 1.8"
+
 # If you want to use Jekyll native, uncomment the line below.
 # To upgrade, run `bundle update`.
 
