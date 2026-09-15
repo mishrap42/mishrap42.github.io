@@ -7,22 +7,28 @@
    CSS Variables - Color Scheme
    -------------------------------------------------------------------------- */
 :root {
-    /* Primary Colors - Deep navy/slate academic palette */
-    --color-primary: #1a365d;
-    --color-primary-light: #2c5282;
-    --color-primary-dark: #0f2942;
+    /* Emphasis - Caltech orange. #FF6C0C is ~2.8:1 on white, below WCAG AA
+       for text of any size, so use it only for non-text emphasis (rules,
+       underlines, hover fills behind dark text). Text that should read as
+       orange uses --color-accent, the same hue darkened to pass AA. */
+    --color-emphasis: #FF6C0C;
 
-    /* Accent Colors */
-    --color-accent: #2b6cb0;
-    --color-accent-light: #4299e1;
+    /* Primary Colors - forest green */
+    --color-primary: #1E3A2F;
+    --color-primary-light: #2F5444;
+    --color-primary-dark: #13261F;
 
-    /* Neutral Colors */
-    --color-text: #2d3748;
-    --color-text-light: #4a5568;
-    --color-text-muted: #718096;
-    --color-background: #ffffff;
-    --color-background-alt: #f7fafc;
-    --color-border: #e2e8f0;
+    /* Accent Colors - orange ink for text (~5:1 on white) */
+    --color-accent: #B84D09;
+    --color-accent-light: #FF6C0C;
+
+    /* Neutral Colors - green-tinted grays on warm stone */
+    --color-text: #2A332E;
+    --color-text-light: #445A50;
+    --color-text-muted: #5F6E67;
+    --color-background: #FFFFFF;
+    --color-background-alt: #F8F7F2;
+    --color-border: #E3E0D5;
 
     /* Typography */
     --font-sans: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -97,8 +103,11 @@ a {
 }
 
 a:hover {
-    color: var(--color-accent-light);
+    color: var(--color-primary);
     text-decoration: underline;
+    text-decoration-color: var(--color-emphasis);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
 }
 
 img {
@@ -195,7 +204,7 @@ ul {
     left: 0;
     width: 0;
     height: 2px;
-    background-color: var(--color-accent);
+    background-color: var(--color-emphasis);
     transition: width var(--transition-base);
 }
 
@@ -300,7 +309,7 @@ ul {
     padding: var(--spacing-sm) var(--spacing-md);
     border-radius: 4px;
     margin-bottom: var(--spacing-lg);
-    border-left: 3px solid var(--color-accent);
+    border-left: 3px solid var(--color-emphasis);
 }
 
 .bio {
@@ -329,8 +338,8 @@ ul {
 }
 
 .social-link:hover {
-    background-color: var(--color-accent);
-    color: white;
+    background-color: var(--color-emphasis);
+    color: var(--color-primary);
     text-decoration: none;
 }
 
@@ -338,9 +347,20 @@ ul {
    Research Section
    -------------------------------------------------------------------------- */
 .section-title {
+    position: relative;
     margin-bottom: var(--spacing-2xl);
     padding-bottom: var(--spacing-md);
     border-bottom: 2px solid var(--color-border);
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 3rem;
+    height: 2px;
+    background-color: var(--color-emphasis);
 }
 
 .research-category {
@@ -407,16 +427,6 @@ ul {
     font-size: 0.8125rem;
     color: var(--color-text-muted);
     margin-bottom: var(--spacing-sm);
-}
-
-.paper-abstract {
-    font-size: 0.9375rem;
-    color: var(--color-text-light);
-    line-height: 1.6;
-}
-
-.paper-abstract p {
-    margin-bottom: 0;
 }
 
 /* Works in Progress */
@@ -516,9 +526,9 @@ ul {
 }
 
 .btn-primary:hover {
-    background-color: var(--color-primary-light);
-    border-color: var(--color-primary-light);
-    color: white;
+    background-color: var(--color-emphasis);
+    border-color: var(--color-emphasis);
+    color: var(--color-primary);
     text-decoration: none;
 }
 
