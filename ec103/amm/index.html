@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monocentric City Simulator — EC/IDS103</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff; --fg:#1a1a1a; --muted:#6b6b6b; --line:#d9d9d9; --panel:#f6f8f7;
+  --green:#00693E; --red:#990000; --blue:#011F5B; --grey:#9a9a9a; --greenlight:#e3efe8;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#14171a; --fg:#ececec; --muted:#a4a4a4; --line:#3a3f44; --panel:#1d2226;
+  --green:#3fbf86; --red:#e06666; --blue:#7fa6e6; --grey:#8a8a8a; --greenlight:#1f3a2d; }}
+:root[data-theme="dark"]{
+  --bg:#14171a; --fg:#ececec; --muted:#a4a4a4; --line:#3a3f44; --panel:#1d2226;
+  --green:#3fbf86; --red:#e06666; --blue:#7fa6e6; --grey:#8a8a8a; --greenlight:#1f3a2d; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Lato,"Helvetica Neue",Arial,sans-serif;line-height:1.35}
+header{padding:18px 22px 6px;border-bottom:3px solid var(--green)}
+header h1{margin:0;font-size:1.35rem;color:var(--green)}
+header p{margin:4px 0 0;color:var(--muted);font-size:.92rem}
+main{display:grid;grid-template-columns:300px 1fr;gap:18px;padding:16px 22px}
+@media (max-width:900px){ main{grid-template-columns:1fr} }
+.panel{background:var(--panel);border-radius:10px;padding:14px 16px}
+.mode{display:flex;gap:6px;margin-bottom:10px}
+.mode button{flex:1;padding:8px;border:1px solid var(--green);background:transparent;color:var(--green);border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit}
+.mode button.on{background:var(--green);color:#fff}
+label{display:block;font-size:.88rem;margin-top:10px}
+label .v{float:right;color:var(--green);font-weight:700;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--green);margin:2px 0 0}
+.presets{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.presets h3, .read h3{margin:0 0 6px;font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.presets button, .util button{margin:3px 3px 0 0;padding:6px 9px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:7px;cursor:pointer;font-size:.85rem;font-family:inherit}
+.presets button:hover{border-color:var(--green)}
+.util{margin-top:10px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.chart{background:var(--panel);border-radius:10px;padding:8px}
+.chart h4{margin:2px 0 0 6px;font-size:.9rem;font-weight:700}
+svg{width:100%;height:auto;display:block}
+.read{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--panel);border-radius:10px;padding:10px 12px}
+.card .k{font-size:.78rem;color:var(--muted)} .card .n{font-size:1.25rem;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
+.card .d{font-size:.8rem;color:var(--muted)}
+.legend{display:flex;gap:16px;font-size:.85rem;margin:8px 6px 0;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:22px;height:0;border-top:3px solid;margin-right:6px;vertical-align:middle}
+.legend .b::before{border-color:var(--grey)} .legend .c::before{border-color:var(--green)} .legend .s::before{border-color:var(--blue);border-top-style:dashed}
+.hint{font-size:.82rem;color:var(--muted);margin:10px 6px 0}
+footer{padding:10px 22px 20px;color:var(--muted);font-size:.8rem}
+.eq{font-family:"Times New Roman",serif;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+  <h1>The monocentric city, live</h1>
+  <p>Cobb–Douglas Alonso–Mills–Muth city. Move a slider; the grey curve is the baseline city you started from. Rent per m² per month, residents per km² of total land, land rent per m² per year.</p>
+</header>
+<main>
+  <div class="panel">
+    <div class="mode">
+      <button id="mClosed" class="on" onclick="setMode('closed')">Closed city (L fixed)</button>
+      <button id="mOpen" onclick="setMode('open')">Open city (Ū fixed)</button>
+    </div>
+    <label>Income <span class="eq">y</span> (€/yr) <span class="v" id="vy"></span><input type="range" id="y" min="20000" max="60000" step="500"></label>
+    <label>Commuting cost <span class="eq">t</span> (€ per km, per yr) <span class="v" id="vt"></span><input type="range" id="t" min="100" max="800" step="10"></label>
+    <label>Housing expenditure share <span class="eq">β</span> <span class="v" id="vb"></span><input type="range" id="b" min="0.15" max="0.50" step="0.01"></label>
+    <label>Agricultural land rent <span class="eq">r<sub>A</sub></span> (€/m²/yr) <span class="v" id="vrA"></span><input type="range" id="rA" min="1" max="25" step="0.5"></label>
+    <label id="lL">Population <span class="eq">L</span> (millions) <span class="v" id="vL"></span><input type="range" id="L" min="0.5" max="10" step="0.1"></label>
+    <label id="lU" style="display:none">Outside option <span class="eq">Ū</span>, relative to baseline <span class="v" id="vU"></span><input type="range" id="U" min="-30" max="30" step="1"></label>
+    <div class="presets">
+      <h3>Experiments (from baseline)</h3>
+      <button onclick="preset({t:0.75})">Radial subway: t −25%</button>
+      <button onclick="preset({y:1.10})">Richer: y +10%</button>
+      <button onclick="preset({L:1.20})">More people: L +20%</button>
+      <button onclick="preset({rA:3})">Farmland ×3: r<sub>A</sub></button>
+      <button onclick="preset({b:1.30})">Love housing: β +30%</button>
+    </div>
+    <div class="util">
+      <button onclick="resetAll()">Reset to baseline</button>
+      <button onclick="freeze()">Freeze current as baseline</button>
+      <label style="margin-top:8px"><input type="checkbox" id="showStep" checked> in open mode, also show the closed-city step (dashed)</label>
+    </div>
+  </div>
+
+  <div>
+    <div class="charts">
+      <div class="chart"><h4>Floor-space rent <span class="eq">p(x)</span></h4><svg id="cP" viewBox="0 0 360 250"></svg></div>
+      <div class="chart"><h4>Population density <span class="eq">D(x)</span></h4><svg id="cD" viewBox="0 0 360 250"></svg></div>
+      <div class="chart"><h4>Land rent <span class="eq">r(x)</span> and <span class="eq">r<sub>A</sub></span></h4><svg id="cR" viewBox="0 0 360 250"></svg></div>
+    </div>
+    <div class="legend"><span class="b">baseline</span><span class="c">current</span><span class="s" id="legStep" style="display:none">closed-city step (L held fixed)</span></div>
+    <div class="read">
+      <div class="card"><div class="k">City edge x̄</div><div class="n" id="rXbar"></div><div class="d" id="rXbarD"></div></div>
+      <div class="card"><div class="k">Rent at CBD p(0)</div><div class="n" id="rP0"></div><div class="d" id="rP0D"></div></div>
+      <div class="card"><div class="k">Rent at edge p(x̄)</div><div class="n" id="rPA"></div><div class="d">set by r<sub>A</sub> alone</div></div>
+      <div class="card"><div class="k" id="rUk">Utility Ū vs baseline</div><div class="n" id="rU"></div><div class="d" id="rUD"></div></div>
+      <div class="card"><div class="k">Density at CBD</div><div class="n" id="rD0"></div><div class="d">residents per km²</div></div>
+      <div class="card"><div class="k">Housing per household at CBD</div><div class="n" id="rQ0"></div><div class="d">m² of floor space</div></div>
+    </div>
+    <p class="hint" id="modeHint"></p>
+  </div>
+</main>
+<footer>
+  Model: households maximise <span class="eq">c<sup>1−β</sup>q<sup>β</sup></span> s.t. <span class="eq">c + p(x)q = y − tx</span>; spatial equilibrium <span class="eq">V = Ū</span> gives <span class="eq">p(x) = p(0)(1 − tx/y)<sup>1/β</sup></span>. Developers build floor space <span class="eq">h = A S<sup>γ</sup></span> per unit land (γ = 0.7), earn zero profit, and stop where land rent hits <span class="eq">r<sub>A</sub></span>. Half of the land in the circle is developable. Closed city solves <span class="eq">Ū</span> from the population identity by bisection; open city takes <span class="eq">Ū</span> as given and solves for <span class="eq">L</span>. Structure follows Brueckner (1987); built for EC/IDS103 (Caltech) after Ahlfeldt (2026), <i>Lecture slides on Quantitative Spatial Economics</i>, Topic 2.
+</footer>
+
+<script>
+// ---------- model ----------
+const G = 0.70, A = 0.0304, THETA = 0.5, XMAX = 35;
+const BASE0 = {y:36000, t:400, b:0.30, rA:5, L:3.8};
+let mode = 'closed';
+let par = {...BASE0};                // current sliders
+let base = null;                     // frozen baseline solution
+let Urel = 0;                        // open mode: Ū relative to baseline, %
+
+function consts(p){
+  const k = Math.pow(1-p.b,1-p.b)*Math.pow(p.b,p.b);
+  const rconst = (1-G)*Math.pow(A,1/(1-G))*Math.pow(G,G/(1-G));
+  const pA = Math.pow(p.rA/rconst, 1-G);
+  return {k, rconst, pA};
+}
+function fns(p, P0){
+  const c = consts(p);
+  const pr = x => P0*Math.pow(Math.max(1-p.t*x/p.y,1e-12), 1/p.b);
+  const q  = x => p.b*(p.y-p.t*x)/pr(x);
+  const h  = x => A*Math.pow(A*G*pr(x), G/(1-G));
+  const r  = x => c.rconst*Math.pow(pr(x), 1/(1-G));
+  const D  = x => THETA*h(x)/q(x)*1e6;
+  const xbar = P0>c.pA ? (p.y/p.t)*(1-Math.pow(c.pA/P0,p.b)) : 0;
+  return {pr,q,h,r,D,xbar,pA:c.pA,k:c.k};
+}
+function population(p, P0){          // Simpson on [0, xbar], millions
+  const f = fns(p,P0); if(f.xbar<=0) return 0;
+  const n = 400, dx = f.xbar/n; let s = 0;
+  for(let i=0;i<=n;i++){ const x=i*dx; const w = (i===0||i===n)?1:(i%2?4:2); s += w*2*Math.PI*x*f.D(x); }
+  return s*dx/3/1e6;
+}
+function solveClosed(p, Lm){
+  const c = consts(p); let lo = Math.log(c.pA*1.0001), hi = Math.log(c.pA*300);
+  for(let i=0;i<60;i++){ const mid=(lo+hi)/2; if(population(p,Math.exp(mid))<Lm) lo=mid; else hi=mid; }
+  return Math.exp((lo+hi)/2);
+}
+function solve(p, m, Ubar){
+  let P0, L;
+  if(m==='closed'){ P0 = solveClosed(p, p.L); L = p.L; }
+  else { const c = consts(p); P0 = Math.pow(c.k*p.y/Ubar, 1/p.b); L = population(p,P0); }
+  const f = fns(p,P0); const U = f.k*p.y*Math.pow(P0,-p.b);
+  return {P0, L, U, ...f, par:{...p}};
+}
+
+// ---------- charts ----------
+const CH = {cP:{svg:null,ylab:'€/m² per month'}, cD:{svg:null,ylab:'residents per km²'}, cR:{svg:null,ylab:'€/m² per year'}};
+const M = {l:46,r:10,t:12,b:34}, W=360, H=250;
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function sampler(sol, key){
+  const f = key==='cP' ? x=>sol.pr(x)/12 : key==='cD' ? x=>sol.D(x) : x=>sol.r(x);
+  const pts=[]; const n=140; for(let i=0;i<=n;i++){ const x=i*sol.xbar/n; pts.push([x,f(x)]); } return pts;
+}
+function draw(key, series, extra){
+  const svg = document.getElementById(key); while(svg.firstChild) svg.removeChild(svg.firstChild);
+  const all = series.flatMap(s=>s.pts.map(p=>p[1])).concat(extra?[extra.y]:[]);
+  let ymax = Math.max(...all)*1.08; if(!isFinite(ymax)||ymax<=0) ymax=1;
+  const sx = x => M.l + x/XMAX*(W-M.l-M.r), sy = y => H-M.b - y/ymax*(H-M.t-M.b);
+  const ns='http://www.w3.org/2000/svg';
+  const el=(n,a)=>{const e=document.createElementNS(ns,n); for(const k in a) e.setAttribute(k,a[k]); return e;};
+  const fg=css('--fg'), muted=css('--muted'), line=css('--line');
+  svg.appendChild(el('line',{x1:M.l,y1:H-M.b,x2:W-M.r,y2:H-M.b,stroke:line}));
+  svg.appendChild(el('line',{x1:M.l,y1:M.t,x2:M.l,y2:H-M.b,stroke:line}));
+  for(let x=0;x<=XMAX;x+=5){ const t=el('text',{x:sx(x),y:H-M.b+13,'font-size':9,fill:muted,'text-anchor':'middle'}); t.textContent=x; svg.appendChild(t); }
+  const step = niceStep(ymax/4);
+  for(let y=0;y<=ymax;y+=step){ svg.appendChild(el('line',{x1:M.l,y1:sy(y),x2:W-M.r,y2:sy(y),stroke:line,'stroke-dasharray':'2,3'}));
+    const t=el('text',{x:M.l-4,y:sy(y)+3,'font-size':9,fill:muted,'text-anchor':'end'}); t.textContent=fmtTick(y); svg.appendChild(t); }
+  const xl=el('text',{x:(M.l+W-M.r)/2,y:H-4,'font-size':10,fill:muted,'text-anchor':'middle'}); xl.textContent='distance from CBD, km'; svg.appendChild(xl);
+  const yl=el('text',{x:10,y:(M.t+H-M.b)/2,'font-size':10,fill:muted,'text-anchor':'middle',transform:`rotate(-90 10 ${(M.t+H-M.b)/2})`}); yl.textContent=CH[key].ylab; svg.appendChild(yl);
+  if(extra){ svg.appendChild(el('line',{x1:M.l,y1:sy(extra.y),x2:W-M.r,y2:sy(extra.y),stroke:css('--red'),'stroke-width':1.6}));
+    const t=el('text',{x:W-M.r-2,y:sy(extra.y)-4,'font-size':10,fill:css('--red'),'text-anchor':'end'}); t.textContent=extra.label; svg.appendChild(t); }
+  for(const s of series){
+    const d = s.pts.map((p,i)=>(i?'L':'M')+sx(p[0]).toFixed(1)+' '+sy(p[1]).toFixed(1)).join(' ');
+    svg.appendChild(el('path',{d,fill:'none',stroke:s.color,'stroke-width':s.w||2.4,'stroke-dasharray':s.dash||'none'}));
+    svg.appendChild(el('line',{x1:sx(s.xbar),y1:M.t,x2:sx(s.xbar),y2:H-M.b,stroke:s.color,'stroke-width':1,'stroke-dasharray':'1,3'}));
+  }
+}
+function niceStep(s){ const p=Math.pow(10,Math.floor(Math.log10(s))); const f=s/p; return (f<1.5?1:f<3.5?2:f<7.5?5:10)*p; }
+function fmtTick(v){ return v>=1000? (v/1000).toFixed(v>=10000?0:1)+'k' : (Number.isInteger(v)?v:v.toFixed(1)); }
+
+// ---------- UI ----------
+const ids=['y','t','b','rA','L','U'];
+function readSliders(){ par={y:+el('y').value,t:+el('t').value,b:+el('b').value,rA:+el('rA').value,L:+el('L').value}; Urel=+el('U').value; }
+function writeSliders(){ el('y').value=par.y; el('t').value=par.t; el('b').value=par.b; el('rA').value=par.rA; el('L').value=par.L; el('U').value=Urel; }
+function el(id){ return document.getElementById(id); }
+function fmt(v,d){ return v.toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}); }
+function pct(v){ return (v>=0?'+':'')+fmt(100*v,1)+'%'; }
+
+function render(){
+  readSliders();
+  el('vy').textContent=fmt(par.y,0); el('vt').textContent=fmt(par.t,0); el('vb').textContent=fmt(par.b,2); el('vrA').textContent=fmt(par.rA,1);
+  el('vL').textContent=fmt(par.L,1)+' M'; el('vU').textContent=(Urel>=0?'+':'')+Urel+'%';
+  const Ubar = base.U*(1+Urel/100);
+  const cur = solve(par, mode, Ubar);
+  const series = key => {
+    const s=[{pts:sampler(base,key),xbar:base.xbar,color:css('--grey'),w:2}];
+    if(mode==='open' && el('showStep').checked){ const stepSol=solve({...par,L:base.L},'closed'); s.push({pts:sampler(stepSol,key),xbar:stepSol.xbar,color:css('--blue'),dash:'6,4',w:2}); }
+    s.push({pts:sampler(cur,key),xbar:cur.xbar,color:css('--green')}); return s; };
+  draw('cP',series('cP')); draw('cD',series('cD')); draw('cR',series('cR'),{y:par.rA,label:'r_A'});
+  el('legStep').style.display = (mode==='open'&&el('showStep').checked)?'inline':'none';
+  el('rXbar').textContent=fmt(cur.xbar,1)+' km'; el('rXbarD').textContent='baseline '+fmt(base.xbar,1)+' km  ('+pct(cur.xbar/base.xbar-1)+')';
+  el('rP0').textContent=fmt(cur.P0/12,1)+' €'; el('rP0D').textContent='baseline '+fmt(base.P0/12,1)+' €  ('+pct(cur.P0/base.P0-1)+')';
+  el('rPA').textContent=fmt(cur.pA/12,1)+' €';
+  if(mode==='closed'){ el('rUk').textContent='Utility Ū vs baseline'; el('rU').textContent=pct(cur.U/base.U-1); el('rUD').textContent='real income of every household (L = '+fmt(cur.L,1)+' M fixed)'; }
+  else { el('rUk').textContent='Population L'; el('rU').textContent=fmt(cur.L,2)+' M'; el('rUD').textContent='baseline '+fmt(base.L,2)+' M  ('+pct(cur.L/base.L-1)+'); Ū is fixed'; }
+  el('rD0').textContent=fmt(cur.D(0),0); el('rQ0').textContent=fmt(cur.q(0),0);
+  el('modeHint').textContent = mode==='closed'
+    ? 'Closed city: nobody can enter or leave, so a change that makes the city nicer raises everyone\'s utility Ū. Rents rotate: ask where they fall and where they rise.'
+    : 'Open city: migrants arrive until utility is back at the outside option Ū. The dashed curve is the closed-city step; migration then shifts rents up everywhere, so the centre no longer need lose.';
+}
+function setMode(m){ mode=m; el('mClosed').classList.toggle('on',m==='closed'); el('mOpen').classList.toggle('on',m==='open');
+  el('lL').style.display = m==='closed'?'block':'none'; el('lU').style.display = m==='open'?'block':'none'; render(); }
+function preset(ch){ par={...base.par}; for(const k in ch){ par[k]=k==='rA'?base.par.rA*ch[k]:base.par[k]*ch[k]; } Urel=0; writeSliders(); render(); }
+function resetAll(){ par={...BASE0}; Urel=0; writeSliders(); base=solve(par,'closed'); render(); }
+function freeze(){ readSliders(); const Ubar=base.U*(1+Urel/100); base=solve(par,mode,Ubar); if(mode==='open'){ par.L=base.L; } Urel=0; writeSliders(); render(); }
+ids.forEach(id=>el(id).addEventListener('input',render)); el('showStep').addEventListener('change',render);
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);
+resetAll();
+</script>
+</body>
+</html>

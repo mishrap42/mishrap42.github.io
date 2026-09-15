@@ -247,6 +247,11 @@ defaults:
       layout: talk
       author_profile: true
       share: true
+  # Course simulators: reachable by direct link only, so keep them out of sitemap.xml
+  - scope:
+      path: "ec103"
+    values:
+      sitemap: false
 
 # Sass/SCSS
 sass:
