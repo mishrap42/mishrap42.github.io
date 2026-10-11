@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasadena from Orbit</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- built by build_goes.py and build_burn.py; each sets one window.* global (fetch() is blocked on file://) -->
+<script src="data/goes.js"></script>
+<script src="data/fires.js"></script>
+<style>
+  :root {
+    --bg: #101214; --panel: #16191c; --panel2: #1d2125; --ink: #f2f2f0; --muted: #a7aaad; --faint: #6f7377;
+    --accent: #ffb347; --accent2: #6cc4ff; --line: rgba(255,255,255,.14);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-size: 14px; }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button, select, input { font: inherit; color: inherit; }
+  code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+
+  #app { display: grid; grid-template-rows: auto 1fr; grid-template-columns: 370px 1fr; height: 100%; }
+  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 14px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: .01em; white-space: nowrap; }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  nav { display: flex; gap: 2px; background: #0c0e10; border-radius: 8px; padding: 3px; }
+  nav button { background: none; border: 0; padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+  nav button:hover { color: var(--ink); }
+  nav button.on { background: var(--panel2); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+  nav button kbd { font-size: 10px; color: var(--faint); margin-left: 4px; font-family: inherit; }
+  .hspace { flex: 1; }
+  .hctl { display: flex; align-items: center; gap: 8px; }
+  select, .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: #3a2a10; border-color: var(--accent); color: var(--accent); }
+  label.chk { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+
+  aside { overflow-y: auto; border-right: 1px solid var(--line); background: var(--panel); padding: 12px 14px 40px; }
+  aside h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; font-weight: 600; }
+  aside h2:first-child { margin-top: 2px; }
+  aside p { line-height: 1.45; margin: 6px 0; color: #d6d7d5; }
+  aside .note { color: var(--muted); font-size: 12.5px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; color: #d6d7d5; }
+  .seg button:hover:not(:disabled) { border-color: var(--muted); }
+  .seg button.on { border-color: var(--accent); color: var(--accent); background: #2a2114; }
+  .seg button:disabled { opacity: .35; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
+  .row > label { color: var(--muted); min-width: 52px; }
+  .card { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
+  .card h3 { margin: 0 0 4px; font-size: 14px; }
+  .card.hl { border-color: var(--accent); }
+  .card table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  .card td { padding: 2px 0; vertical-align: top; }
+  .card td:first-child { color: var(--muted); width: 74px; padding-right: 8px; }
+  .formula { font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: #0c0e10; border-radius: 6px; padding: 7px 9px; margin: 6px 0; color: var(--accent); overflow-x: auto; white-space: nowrap; }
+  .legend .bar { height: 10px; border-radius: 3px; margin: 6px 0 3px; }
+  .legend .ticks { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .legend .ends { display: flex; justify-content: space-between; font-size: 12px; color: #d6d7d5; margin-top: 2px; }
+  .links a { display: inline-block; margin: 2px 8px 2px 0; font-size: 12.5px; }
+  .tag { display: inline-block; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 4px; }
+
+  main { position: relative; overflow: hidden; background: #0a0b0c; }
+  .grid { position: absolute; inset: 0; display: grid; gap: 3px; background: #000; }
+  .pane { position: relative; overflow: hidden; background: #0a0b0c; }
+  .pane .map { position: absolute; inset: 0; }
+  .pane .phead { position: absolute; z-index: 800; top: 6px; left: 6px; right: 6px; display: flex; gap: 8px; align-items: flex-start; pointer-events: none; }
+  .pane .ptitle { background: rgba(10,11,12,.82); border-radius: 6px; padding: 5px 9px; line-height: 1.3; pointer-events: auto; max-width: 85%; }
+  .pane .ptitle b { font-size: 13.5px; }
+  .pane .ptitle .sub { color: var(--muted); font-size: 12px; }
+  .pane .spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.2); border-top-color: var(--accent); border-radius: 50%; animation: sp .8s linear infinite; margin-top: 7px; display: none; }
+  .pane.loading .spin { display: block; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .pane .pmsg { position: absolute; z-index: 700; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; color: var(--muted); padding: 30px; background: rgba(10,11,12,.75); line-height: 1.5; }
+  .pane.na .pmsg { display: flex; }
+  .pane .bigyear { position: absolute; z-index: 800; right: 14px; top: 8px; font-size: 44px; font-weight: 700; color: rgba(255,255,255,.92); text-shadow: 0 2px 8px rgba(0,0,0,.8); font-variant-numeric: tabular-nums; pointer-events: none; }
+  .pane .bigyear small { display: block; font-size: 13px; font-weight: 500; text-align: right; color: rgba(255,255,255,.8); }
+  .pane.focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .leaflet-container { font: inherit; background: #0a0b0c; }
+  .leaflet-control-attribution { background: rgba(10,11,12,.7) !important; color: var(--faint) !important; font-size: 10px; }
+  .leaflet-control-attribution a { color: var(--muted); }
+  .leaflet-control-scale-line { background: rgba(10,11,12,.6); color: var(--ink); border-color: var(--muted); }
+  .leaflet-bar a { background: var(--panel); color: var(--ink); border-bottom-color: var(--line); }
+  .leaflet-bar a:hover { background: #2a2e33; }
+
+  main.has-tl .leaflet-bottom.leaflet-right { margin-bottom: 58px; }
+  #tlbar { position: absolute; z-index: 900; left: 50%; transform: translateX(-50%); bottom: 14px; display: flex; align-items: center; gap: 10px; background: rgba(16,18,20,.92); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; width: min(760px, calc(100% - 40px)); }
+  #tlbar input[type=range] { flex: 1; accent-color: var(--accent); }
+  #tlbar .lab { font-variant-numeric: tabular-nums; min-width: 92px; text-align: center; color: var(--accent); font-weight: 600; }
+  #tlbar .play { width: 34px; height: 30px; border-radius: 6px; border: 1px solid var(--accent); background: #2a2114; color: var(--accent); cursor: pointer; font-size: 14px; }
+
+
+  svg.chart text { fill: var(--muted); font-size: 10.5px; }
+  svg.chart .ax { stroke: rgba(255,255,255,.25); stroke-width: 1; }
+  svg.chart .gr { stroke: rgba(255,255,255,.07); stroke-width: 1; }
+  #tip { position: fixed; z-index: 3000; pointer-events: none; background: #0c0e10; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-size: 12px; line-height: 1.35; display: none; max-width: 260px; }
+  .pinlist { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+  .pinlist div { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+  .pinlist i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .pinlist .x { margin-left: auto; cursor: pointer; color: var(--muted); }
+
+  .modal { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; }
+  .modal.open { display: flex; }
+  .modal .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; width: min(820px, 94vw); max-height: 88vh; display: flex; flex-direction: column; }
+  .modal .box header { border: 0; background: none; padding: 12px 16px 4px; grid-column: auto; }
+  .modal pre { margin: 0 16px; padding: 12px; background: #0c0e10; border-radius: 8px; overflow: auto; flex: 1; font-size: 12.5px; line-height: 1.45; color: #e0e0dc; }
+  .modal .foot { padding: 10px 16px 14px; display: flex; gap: 8px; align-items: center; }
+  .modal .helpbody { padding: 4px 18px 6px; overflow-y: auto; line-height: 1.5; }
+  #toast { position: fixed; z-index: 5000; left: 50%; top: 60px; transform: translateX(-50%); background: #2a2114; border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; padding: 7px 14px; display: none; }
+  @media (max-width: 820px) { #app { grid-template-columns: 1fr; grid-template-rows: auto 45% 1fr; } header { grid-column: 1; } aside { order: 3; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Pasadena from orbit</h1>
+    <nav id="tabs">
+      <button data-v="sensors">Sensors<kbd>1</kbd></button>
+      <button data-v="bands">Bands &amp; indices<kbd>2</kbd></button>
+      <button data-v="composite">Compositing<kbd>3</kbd></button>
+      <button data-v="timelapse">Time lapse<kbd>4</kbd></button>
+      <button data-v="fires">Fires<kbd>5</kbd></button>
+    </nav>
+    <div class="hspace"></div>
+    <div class="hctl">
+      <select id="site" title="Jump to a place"></select>
+      <label class="chk"><input type="checkbox" id="labels" checked> labels</label>
+      <button class="btn" id="geebtn" title="Earth Engine code that reproduces the current view">GEE code</button>
+      <button class="btn" id="linkbtn" title="Copy a link to this exact view">Copy link</button>
+      <button class="btn" id="helpbtn">?</button>
+    </div>
+  </header>
+  <aside id="side"></aside>
+  <main id="stage">
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+<div id="tip"></div>
+<div id="toast"></div>
+<div class="modal" id="geemodal"><div class="box">
+  <header><b id="geetitle">Earth Engine code</b></header>
+  <p class="note" style="margin:0 16px 8px;color:var(--muted)">Paste into the <a href="https://code.earthengine.google.com/" target="_blank" rel="noopener">GEE Code Editor</a> (needs a free Earth Engine account). Same place, dates, bands and compositing rule as the panel you are looking at; GEE also masks clouds pixel by pixel, which this page cannot.</p>
+  <pre id="geecode"></pre>
+  <div class="foot"><button class="btn primary" id="geecopy">Copy</button><a class="btn" href="https://code.earthengine.google.com/" target="_blank" rel="noopener">Open Code Editor</a><div class="hspace"></div><button class="btn" data-close>Close</button></div>
+</div></div>
+<div class="modal" id="helpmodal"><div class="box">
+  <header><b>How this page works</b></header>
+  <div class="helpbody">
+    <p>Every image is computed live, as you pan, by Microsoft's <a href="https://planetarycomputer.microsoft.com/" target="_blank" rel="noopener">Planetary Computer</a> from the original Landsat, Sentinel-2, MODIS and NAIP files: the page asks for a set of scenes (a date window, a cloud filter), a band formula and a compositing rule, and the server returns map tiles. Median composites read every scene in the window, so a pane can take 5–15 seconds to fill; the spinner in its title says it is still working. Panes in one view move together, and the small ring shows where your cursor is in the other panes.</p>
+    <p>NASA <a href="https://nasa-gibs.github.io/gibs-api-docs/" target="_blank" rel="noopener">GIBS</a> serves the daily MODIS frames; <a href="https://s2maps.eu/" target="_blank" rel="noopener">EOX</a> serves the Sentinel-2 cloudless mosaics. <b>GEE code</b> writes the Earth Engine script for the view you are on, the way you would do it for a project.</p>
+    <p><b>Keys</b>: <code>1</code>–<code>5</code> switch views · <code>space</code> play/pause a time lapse or fire loop · <code>←</code>/<code>→</code> step frames · <code>L</code> labels · <code>Esc</code> close.</p>
+    <p class="note" style="color:var(--muted)">Caveats: Sentinel-2 files processed after 25 Jan 2022 carry a +1000 offset, which this page removes (Earth Engine's <code>S2_SR_HARMONIZED</code> does the same). Landsat values are Collection 2 Level-2 surface reflectance (scale 0.0000275, offset −0.2). NAIP is 8-bit aerial photography, not calibrated reflectance, so its index values are only comparable within one year.</p>
+  </div>
+  <div class="foot"><div class="hspace"></div><button class="btn" data-close>Close</button></div>
+</div></div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const enc = encodeURIComponent;
+  const PC = 'https://planetarycomputer.microsoft.com/api/data/v1/';
+  const STAC = 'https://planetarycomputer.microsoft.com/api/stac/v1/';
+  const GEE_CAT = id => 'https://developers.google.com/earth-engine/datasets/catalog/' + id.replace(/\//g, '_');
+  const PC_CAT = c => 'https://planetarycomputer.microsoft.com/dataset/' + c;
+  const SERIES = ['var(--s1)', 'var(--s2)', 'var(--s3)'];
+  const SERIES_HEX = ['#3987e5', '#d95926', '#199e70'];
+
+  // ================================================================ sensors
+  // bands: generic role -> asset name; refl(asset, ctx) -> numexpr string giving surface reflectance (0–1).
+  const SENSORS = {
+    landsat: {
+      name: 'Landsat 8/9', long: 'Landsat 8 & 9 OLI (Collection 2, Level 2)', coll: 'landsat-c2-l2', res: '30 m', px: 30,
+      revisit: '16 days each, 8 days together', record: '1972– (surface reflectance 1982–)', who: 'NASA / USGS', maxNative: 14,
+      bands: { B: 'blue', G: 'green', R: 'red', N: 'nir08', S1: 'swir16', S2: 'swir22' },
+      bandNames: { B: 'B2', G: 'B3', R: 'B4', N: 'B5', S1: 'B6', S2: 'B7' },
+      refl: b => `(${b}*0.0000275-0.2)`, cloud: true, nodata: '&nodata=0',
+      good: '50 years of data.',
+      gee: [['LANDSAT/LC09/C02/T1_L2', 'Landsat 9 SR'], ['LANDSAT/LC08/C02/T1_L2', 'Landsat 8 SR'], ['LANDSAT/LE07/C02/T1_L2', 'Landsat 7 SR'], ['LANDSAT/LT05/C02/T1_L2', 'Landsat 5 SR']],
+      spectral: [['B1', 'coastal', 433, 453], ['B2', 'blue', 450, 515], ['B3', 'green', 525, 600], ['B4', 'red', 630, 680], ['B5', 'NIR', 845, 885], ['B6', 'SWIR1', 1560, 1660], ['B7', 'SWIR2', 2100, 2300]],
+    },
+    s2: {
+      name: 'Sentinel-2', long: 'Sentinel-2A/B/C MSI (Level-2A)', coll: 'sentinel-2-l2a', res: '10 m', px: 10,
+      revisit: '5 days (2A + 2B; 2C from 2025)', record: '2015– (Level-2A everywhere 2017–)', who: 'ESA / Copernicus', maxNative: 15,
+      bands: { B: 'B02', G: 'B03', R: 'B04', N: 'B08', S1: 'B11', S2: 'B12' },
+      bandNames: { B: 'B2', G: 'B3', R: 'B4', N: 'B8', S1: 'B11', S2: 'B12' },
+      // baseline 04.00 (25 Jan 2022 on) adds 1000 to every digital number
+      refl: (b, ctx) => (ctx && ctx.end > '2022-01-25') ? `((${b}-1000)/10000)` : `(${b}/10000)`, cloud: true, nodata: '&nodata=0',
+      good: 'Highest resolution publicly available multispectral images.',
+      gee: [['COPERNICUS/S2_SR_HARMONIZED', 'Surface reflectance'], ['COPERNICUS/S2_CLOUD_PROBABILITY', 'Cloud probability'], ['GOOGLE/CLOUD_SCORE_PLUS/V1/S2_HARMONIZED', 'Cloud Score+']],
+      spectral: [['B1', 'aerosol', 433, 453], ['B2', 'blue', 458, 523], ['B3', 'green', 543, 578], ['B4', 'red', 650, 680], ['B5', 'red edge', 698, 713], ['B6', 'red edge', 733, 748], ['B7', 'red edge', 773, 793], ['B8', 'NIR', 785, 900], ['B8A', 'NIR narrow', 855, 875], ['B11', 'SWIR1', 1565, 1655], ['B12', 'SWIR2', 2100, 2280]],
+    },
+    modis: {
+      name: 'MODIS', long: 'MODIS Terra 8-day surface reflectance (MOD09A1)', coll: 'modis-09A1-061', res: '500 m', px: 500,
+      revisit: 'daily (Terra 1999–, Aqua 2002–); this layer is an 8-day composite', record: '2000–', who: 'NASA', maxNative: 11,
+      bands: { B: 'sur_refl_b03', G: 'sur_refl_b04', R: 'sur_refl_b01', N: 'sur_refl_b02', S1: 'sur_refl_b06', S2: 'sur_refl_b07' },
+      bandNames: { B: 'b3', G: 'b4', R: 'b1', N: 'b2', S1: 'b6', S2: 'b7' },
+      refl: b => `(${b}*0.0001)`, cloud: false, nodata: '',
+      good: 'Daily global imagery since 2000.',
+      gee: [['MODIS/061/MOD09GA', 'Daily SR, 500 m'], ['MODIS/061/MOD09A1', '8-day SR, 500 m'], ['MODIS/061/MOD13Q1', '16-day NDVI/EVI, 250 m'], ['MODIS/061/MCD12Q1', 'Land cover'], ['MODIS/061/MCD64A1', 'Burned area']],
+      spectral: [['b3', 'blue', 459, 479], ['b4', 'green', 545, 565], ['b1', 'red', 620, 670], ['b2', 'NIR', 841, 876], ['b5', 'NIR/SWIR', 1230, 1250], ['b6', 'SWIR1', 1628, 1652], ['b7', 'SWIR2', 2105, 2155]],
+    },
+    naip: {
+      name: 'NAIP', long: 'USDA National Agriculture Imagery Program (aerial)', coll: 'naip', res: '0.6 m', px: 0.6,
+      revisit: 'every 2–3 years, summer flights', record: '2003– (4 bands from ~2010)', who: 'USDA FSA (aircraft, not a satellite)', maxNative: 18,
+      bands: { B: 'image_b3', G: 'image_b2', R: 'image_b1', N: 'image_b4' },
+      bandNames: { B: 'B', G: 'G', R: 'R', N: 'N' },
+      refl: b => `(${b}*0.0012)`, cloud: false, nodata: '', noCalib: true,
+      good: 'Aerial imagery.',
+      gee: [['USDA/NAIP/DOQQ', 'NAIP imagery']],
+      spectral: [['B', 'blue', 420, 492], ['G', 'green', 533, 587], ['R', 'red', 604, 664], ['N', 'NIR', 833, 920]],
+    },
+  };
+  const NAIP_YEARS = [2012, 2014, 2016, 2018, 2020, 2022];
+  const naipYear = y => NAIP_YEARS.filter(n => n <= Math.max(y, NAIP_YEARS[0])).pop();
+
+  // ================================================================ renders (band combinations and indices)
+  const RD = ['#a50026', '#d73027', '#f46d43', '#fdae61', '#fee08b', '#ffffbf', '#d9ef8b', '#a6d96a', '#66bd63', '#1a9850', '#006837'];
+  const RB = ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#f7f7f7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061'];
+  const RENDERS = {
+    tc: { name: 'True color', kind: 'rgb', bands: ['R', 'G', 'B'], max: 0.3, gamma: 1.5,
+      what: 'Red, green and blue bands in the red, green and blue channels: roughly what your eye would see. Haze, smoke and thin cloud show up as they would to you.' },
+    cir: { name: 'Color infrared', kind: 'rgb', bands: ['N', 'R', 'G'], max: 0.45, gamma: 1.3,
+      what: 'Near-infrared in the red channel. Leaves reflect NIR strongly (it bounces off the spongy cell structure), so healthy vegetation turns bright red; irrigated lawns and golf courses stand out against dry chaparral.' },
+    swir: { name: 'SWIR (SWIR2 · NIR · red)', kind: 'rgb', bands: ['S2', 'N', 'R'], max: 0.45, gamma: 1.3, needs: 'S2',
+      what: 'Landsat "7-5-4". Vegetation green, bare soil and rock tan to pink, burned ground deep red-brown. Shortwave infrared passes through smoke and haze better than visible light.' },
+    urban: { name: 'Urban (SWIR2 · SWIR1 · red)', kind: 'rgb', bands: ['S2', 'S1', 'R'], max: 0.45, gamma: 1.3, needs: 'S2',
+      what: 'Built surfaces (concrete, roofs, asphalt) come out purple-grey, vegetation green, water black.' },
+    ndvi: { name: 'NDVI', kind: 'index', f: '(N-R)/(N+R)', range: [-0.2, 0.8], ramp: RD, lo: 'water, roofs, bare', hi: 'dense green leaves',
+      long: 'Normalized Difference Vegetation Index',
+      what: 'Green leaves absorb red light and reflect NIR, so (NIR − red)/(NIR + red) rises with green leaf area. Bounded −1…1: water < 0, pavement and soil ≈ 0.1, chaparral 0.3–0.5, irrigated turf and forest 0.6–0.9. Saturates over dense canopy.' },
+    evi: { name: 'EVI', kind: 'index', f: '2.5*(N-R)/(N+6*R-7.5*B+1)', range: [-0.2, 0.8], ramp: RD, lo: 'bare', hi: 'dense canopy', calib: true,
+      long: 'Enhanced Vegetation Index',
+      what: 'NDVI with a blue-band correction for aerosols and a soil term. Keeps discriminating where NDVI saturates (dense forest, heavily irrigated crops). MODIS ships it as a product (MOD13).' },
+    ndwi: { name: 'NDWI', kind: 'index', f: '(G-N)/(G+N)', range: [-0.6, 0.6], ramp: RB, lo: 'vegetation', hi: 'open water',
+      long: 'Normalized Difference Water Index (McFeeters)',
+      what: 'Green vs NIR: water reflects some green and almost no NIR, so open water is positive. Picks out reservoirs, the ocean and pools.' },
+    ndmi: { name: 'NDMI', kind: 'index', f: '(N-S1)/(N+S1)', range: [-0.4, 0.6], ramp: RB, lo: 'dry', hi: 'moist canopy', needs: 'S1',
+      long: 'Normalized Difference Moisture Index',
+      what: 'NIR vs SWIR1. Water in leaves absorbs SWIR, so wetter canopies score higher. Used for drought stress and fuel moisture, i.e. how ready the hillsides are to burn.' },
+    ndbi: { name: 'NDBI', kind: 'index', f: '(S1-N)/(S1+N)', range: [-0.4, 0.4], ramp: RB.slice().reverse(), lo: 'vegetation, water', hi: 'built-up, bare', needs: 'S1',
+      long: 'Normalized Difference Built-up Index',
+      what: 'The mirror image of NDMI: built surfaces reflect more SWIR1 than NIR. A first cut at urban extent, though bare soil scores high too (look at the dry washes).' },
+    nbr: { name: 'NBR', kind: 'index', f: '(N-S2)/(N+S2)', range: [-0.4, 0.8], ramp: RD, lo: 'burned, bare', hi: 'healthy vegetation', needs: 'S2',
+      long: 'Normalized Burn Ratio',
+      what: 'NIR vs SWIR2. Fire removes leaves (NIR falls) and leaves char and dry soil (SWIR2 rises). The pre-fire minus post-fire difference, dNBR, is a common measure of burn severity; we will use it for the Eaton and Palisades fires.' },
+  };
+  const RENDER_ORDER = ['tc', 'cir', 'swir', 'urban', 'ndvi', 'evi', 'ndwi', 'ndmi', 'ndbi', 'nbr'];
+  const renderOK = (sk, rk) => { const S = SENSORS[sk], R = RENDERS[rk]; if (R.needs && !S.bands[R.needs]) return false; if (R.calib && S.noCalib) return false; return true; };
+
+  // ================================================================ periods
+  const SEASONS = {
+    dry: { name: 'Dry season (May–Sep)', a: '-05-01', b: '-09-30' },
+    wet: { name: 'Wet season (Jan–Mar)', a: '-01-01', b: '-03-31' },
+    year: { name: 'Whole year', a: '-01-01', b: '-12-31' },
+  };
+  const period = (y, s) => ({ start: y + SEASONS[s].a, end: y + SEASONS[s].b, label: SEASONS[s].name.replace(/ \(.*/, '') + ' ' + y, months: SEASONS[s].name.match(/\((.*)\)/) ? SEASONS[s].name.match(/\((.*)\)/)[1] + ' ' + y : y });
+  const LS_PLATFORMS = y => y <= 1998 ? ['landsat-5'] : y <= 2011 ? ['landsat-5', 'landsat-7'] : y === 2012 ? ['landsat-7'] : y <= 2021 ? ['landsat-8'] : ['landsat-8', 'landsat-9'];
+  const LS_NAME = p => p.map(x => 'L' + x.split('-')[1]).join('+');
+
+  // ================================================================ compositing methods
+  const METHODS = {
+    recent: { name: 'Most recent scene', sort: 'recent', cc: null, sel: 'first',
+      what: 'Newest scene on top, any cloud cover. What you get if you just "grab the latest image": often a cloud, or half a scene.', gee: "col.sort('system:time_start', false).mosaic()" },
+    clear: { name: 'Least-cloudy scene', sort: 'cloud', cc: null, sel: 'first',
+      what: 'Scenes ranked by their scene-level cloud score, clearest on top. One real date per place (good for change detection), but the cloud score is for the whole 100–185 km scene, not your pixel.', gee: "col.sort(CLOUD, false).mosaic()  // clearest ends up on top" },
+    median: { name: 'Median composite', sort: null, cc: 70, sel: 'median',
+      what: 'Per pixel, per band, the median over every scene in the window. Clouds (too bright) and shadows (too dark) fall in the tails and drop out. The result is not any single real date.', gee: 'col.median()' },
+    mean: { name: 'Mean composite', sort: null, cc: 70, sel: 'mean',
+      what: 'Per-pixel average. Same idea as the median but not robust: every cloud drags the mean brighter. Compare it with the median panel.', gee: 'col.mean()' },
+    green: { name: 'Greenest pixel (max NDVI)', sort: null, cc: 70, sel: 'lastbandhight',
+      what: 'Per pixel, keep the whole scene-date where NDVI was highest ("quality mosaic"). Clouds have low NDVI so they lose. Shows peak-season vegetation, but neighbouring pixels can come from different dates (patchy look).', gee: "col.map(addNDVI).qualityMosaic('NDVI')" },
+    eox: { name: 'Sentinel-2 cloudless (EOX)', ext: true,
+      what: 'A production mosaic: EOX\'s annual cloud-free Sentinel-2 map, built with per-pixel cloud masks and scene selection.' },
+  };
+  const METHOD_ORDER = ['recent', 'clear', 'median', 'mean', 'green', 'eox'];
+  const EOX = y => 'https://tiles.maps.eox.at/wmts/1.0.0/' + (y <= 2016 ? 's2cloudless_3857' : 's2cloudless-' + Math.min(y, 2025) + '_3857') + '/default/g/{z}/{y}/{x}.jpg';
+  const GIBS = d => `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${d}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
+
+  // ================================================================ sites
+  const SITES = [
+    { name: 'Pasadena: Rose Bowl & Arroyo Seco', lat: 34.158, lon: -118.150, z: 13 },
+    { name: 'Pasadena & the San Gabriel front', lat: 34.170, lon: -118.130, z: 12 },
+    { name: 'JPL & Devil\'s Gate (Hahamongna)', lat: 34.195, lon: -118.170, z: 14 },
+    { name: 'Altadena & Eaton Canyon', lat: 34.190, lon: -118.110, z: 13 },
+    { name: 'Caltech & the Huntington', lat: 34.130, lon: -118.118, z: 14 },
+    { name: 'San Gabriel Mts: Mt Wilson', lat: 34.225, lon: -118.065, z: 12 },
+    { name: 'Downtown LA & the LA River', lat: 34.050, lon: -118.235, z: 13 },
+    { name: 'Ports of LA & Long Beach', lat: 33.750, lon: -118.230, z: 12 },
+    { name: 'Pacific Palisades', lat: 34.050, lon: -118.535, z: 13 },
+    { name: 'LA basin (zoomed out)', lat: 34.050, lon: -118.250, z: 10 },
+    { name: 'Imperial Valley farms (crop seasons)', lat: 32.880, lon: -115.560, z: 12 },
+  ];
+
+  // ================================================================ state
+  const S = {
+    view: 'sensors', lat: SITES[0].lat, lon: SITES[0].lon, z: SITES[0].z,
+    render: 'tc', year: 2024, season: 'dry',            // sensors + bands
+    bsensor: 's2', brender: 'ndvi',                      // bands
+    csensor: 's2', cyear: 2024, cseason: 'wet', crender: 'tc', // composite
+    tl: 'landsat', tlrender: 'tc', tlmyear: 2023, tld0: '2023-02-15', tld1: '2023-03-12', tli: null, tlcmp: false,
+    fm: 'goes', fgi: null, gfdc: true, fsat: 'aqua', fdi: null, dfire: true, daod: false, ff: 'eaton', frender: 'swir', fview: null,
+    labels: true,
+  };
+
+  // ================================================================ Planetary Computer: register searches, build tile URLs
+  const regCache = new Map();
+  function register(spec) {
+    const key = JSON.stringify(spec);
+    if (regCache.has(key)) return regCache.get(key);
+    const args = [{ op: '=', args: [{ property: 'collection' }, spec.coll] },
+      { op: 'anyinteracts', args: [{ property: 'datetime' }, { interval: [spec.start + 'T00:00:00Z', spec.end + 'T23:59:59Z'] }] }];
+    if (spec.cc != null) args.push({ op: '<=', args: [{ property: 'eo:cloud_cover' }, spec.cc] });
+    if (spec.platforms) args.push({ op: 'in', args: [{ property: 'platform' }, spec.platforms] });
+    const body = { 'filter-lang': 'cql2-json', filter: { op: 'and', args } };
+    if (spec.sort === 'recent') body.sortby = [{ field: 'datetime', direction: 'desc' }];
+    if (spec.sort === 'cloud') body.sortby = [{ field: 'eo:cloud_cover', direction: 'asc' }];
+    const p = fetch(PC + 'mosaic/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(r => { if (!r.ok) throw new Error('register ' + r.status); return r.json(); }).then(j => j.searchid);
+    p.catch(() => regCache.delete(key));
+    regCache.set(key, p);
+    return p;
+  }
+
+  // numexpr expression for a render on a sensor; ctx = period (for the Sentinel-2 offset)
+  function expression(sk, rk, ctx) {
+    const SN = SENSORS[sk], R = RENDERS[rk];
+    const rf = role => SN.refl(SN.bands[role], ctx);
+    if (R.kind === 'rgb') return R.bands.map(rf).join(';');
+    return R.f.replace(/\b(S1|S2|B|G|R|N)\b/g, rf);
+  }
+  function tileQuery(sk, rk, ctx, sel) {
+    const SN = SENSORS[sk], R = RENDERS[rk];
+    let expr = expression(sk, rk, ctx);
+    if (sel === 'lastbandhight') expr += ';' + expression(sk, 'ndvi', ctx);   // decision band, dropped from the output
+    let q = 'collection=' + SN.coll + '&expression=' + enc(expr) + (sk === 'naip' ? '' : '&asset_as_band=true') + SN.nodata;
+    q += R.kind === 'rgb' ? '&rescale=0,' + R.max + '&color_formula=' + enc('gamma RGB ' + R.gamma) : '&rescale=' + R.range.join(',') + '&colormap_name=' + (R.ramp === RD ? 'rdylgn' : R.ramp === RB ? 'rdbu' : 'rdbu_r');
+    if (sel && sel !== 'first') q += '&exitwhenfull=False&skipcovered=False&pixel_selection=' + sel;
+    return q;
+  }
+  // Standard "one good image for this period" spec per sensor
+  function stdSpec(sk, y, season) {
+    const p = period(y, season);
+    if (sk === 'landsat') return { reg: { coll: 'landsat-c2-l2', start: p.start, end: p.end, cc: 30, platforms: LS_PLATFORMS(y) }, sel: 'median', ctx: p,
+      desc: 'median, ' + p.months + ', ' + LS_NAME(LS_PLATFORMS(y)) + ', scenes ≤30% cloud' };
+    if (sk === 's2') return { reg: { coll: 'sentinel-2-l2a', start: p.start, end: p.end, cc: 30 }, sel: 'median', ctx: p, desc: 'median, ' + p.months + ', scenes ≤30% cloud' };
+    if (sk === 'modis') return { reg: { coll: 'modis-09A1-061', start: p.start, end: p.end, sort: 'recent' }, sel: 'first', ctx: p, desc: 'last 8-day composite in ' + p.months };
+    const ny = naipYear(y);
+    return { reg: { coll: 'naip', start: ny + '-01-01', end: ny + '-12-31' }, sel: 'first', ctx: { start: ny + '-01-01', end: ny + '-12-31' }, desc: 'summer ' + ny + ' flight' + (ny !== y ? ' (nearest NAIP year)' : '') };
+  }
+
+  // A layer group that fills in once the search is registered; .ready resolves when its tiles have loaded.
+  // A layer group whose tile layer may arrive later; setVis hides it without unloading (for preloading frames).
+  function mkGroup() {
+    const g = L.layerGroup(); g.vis = true;
+    g.ready = new Promise(res => { g._res = res; });
+    g.setVis = v => { g.vis = v; if (g.tile) { g.tile.setOpacity(v ? 1 : 0); g.tile.setZIndex(v ? 10 : 1); } };
+    return g;
+  }
+  function pcLayer(reg, query, maxNative, pane) {
+    const g = mkGroup();
+    register(reg).then(id => {
+      const t = L.tileLayer(PC + 'mosaic/' + id + '/tiles/WebMercatorQuad/{z}/{x}/{y}@1x?' + query, Object.assign({ maxNativeZoom: maxNative, maxZoom: 19, opacity: g.vis ? 1 : 0, zIndex: g.vis ? 10 : 1 }, pane ? { pane } : {}));
+      wireLoad(g, t);
+      g.addLayer(t);
+    }).catch(e => { g.failed = String(e); g._res(); if (g._pane) g._pane.setLoading(false, 'Could not reach the Planetary Computer (' + e.message + ').'); });
+    return g;
+  }
+  function urlLayer(url, maxNative, pane, opacity) {
+    const g = mkGroup();
+    const t = L.tileLayer(url, Object.assign({ maxNativeZoom: maxNative, maxZoom: 19, zIndex: 10 }, pane ? { pane } : {}, opacity != null ? { opacity } : {}));
+    wireLoad(g, t); g.addLayer(t);
+    return g;
+  }
+  function wireLoad(g, t) {
+    g.tile = t;
+    t.on('loading', () => { g.isLoading = true; if (g._pane && g._pane.current === g) g._pane.setLoading(true); });
+    t.on('load', () => { g.isLoading = false; g._res(); if (g._pane && g._pane.current === g) g._pane.setLoading(false); });
+    // the tiler sometimes times out (504) on a cold median; retry each tile once
+    t.on('tileerror', e => { if (e.tile._retried) return; e.tile._retried = true; const src = e.tile.src; setTimeout(() => { e.tile.src = src + (src.includes('?') ? '&' : '?') + 'retry=1'; }, 1500); });
+  }
+
+  // ================================================================ panes (synchronised Leaflet maps)
+  let panes = [];
+  let syncing = false;
+  function makePane(parent, opts) {
+    const el = document.createElement('div'); el.className = 'pane';
+    el.innerHTML = '<div class="map"></div><div class="phead"><div class="ptitle"></div><div class="spin"></div></div><div class="pmsg"></div>';
+    parent.appendChild(el);
+    const map = L.map(el.querySelector('.map'), { zoomControl: false, attributionControl: !!opts.attrib, minZoom: 5, maxZoom: 18, zoomSnap: 1, fadeAnimation: false });
+    map.setView([S.lat, S.lon], S.z);
+    if (opts.zoom) L.control.zoom({ position: 'bottomright' }).addTo(map);
+    if (opts.scale) L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
+    map.createPane('labels'); map.getPane('labels').style.zIndex = 450; map.getPane('labels').style.pointerEvents = 'none';
+    const ESRI_REF = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/';
+    const labels = L.layerGroup([
+      L.tileLayer(ESRI_REF + 'World_Transportation/MapServer/tile/{z}/{y}/{x}', { pane: 'labels', maxZoom: 19, maxNativeZoom: 17, opacity: 0.3 }),
+      L.tileLayer(ESRI_REF + 'World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { pane: 'labels', maxZoom: 19, maxNativeZoom: 17 })]);
+    if (S.labels) labels.addTo(map);
+    if (opts.attrib) map.attributionControl.setPrefix(false).addAttribution('Landsat (USGS/NASA), Sentinel-2 (ESA Copernicus), MODIS (NASA), NAIP (USDA) via <a href="https://planetarycomputer.microsoft.com/">Planetary Computer</a> · <a href="https://www.earthdata.nasa.gov/gibs">NASA GIBS</a> · <a href="https://s2maps.eu">Sentinel-2 cloudless by EOX</a> (CC BY-NC-SA) · labels © Esri and its data partners');
+    const ring = L.circleMarker([0, 0], { radius: 9, color: '#fff', weight: 1.5, fill: false, interactive: false, opacity: 0 }).addTo(map);
+    const P = {
+      el, map, labels, ring, current: null, layers: [],
+      setTitle(html) { el.querySelector('.ptitle').innerHTML = html; },
+      setLoading(on, msg) { el.classList.toggle('loading', !!on); if (msg) this.setNA(msg); },
+      setNA(msg) { el.classList.toggle('na', !!msg); el.querySelector('.pmsg').innerHTML = msg || ''; },
+      show(layer) {
+        if (this.current === layer) return;
+        const old = this.current; this.current = layer;
+        if (layer) { this.attach(layer); layer.setVis(true); }
+        if (old) { if (this.keep.has(old)) old.setVis(false); else map.removeLayer(old); }
+        this.setLoading(layer ? (layer.isLoading || !layer.tile) && !layer.failed : false);
+        this.setNA(layer && layer.failed ? 'Could not reach the server.' : '');
+      },
+      attach(l) { l._pane = this; if (!map.hasLayer(l)) l.addTo(map); },
+      keep: new Set(),
+      // keep these layers attached but hidden (they load in the background); drop other hidden ones
+      retain(list) {
+        const want = new Set(list);
+        for (const l of this.keep) if (!want.has(l) && l !== this.current) map.removeLayer(l);
+        this.keep = want;
+        for (const l of want) if (l !== this.current) { l.setVis(false); this.attach(l); }
+      },
+    };
+    map.on('move', () => {
+      if (syncing) return; syncing = true;
+      const c = map.getCenter(), z = map.getZoom();
+      for (const o of panes) if (o !== P) o.map.setView(c, z, { animate: false });
+      S.lat = +c.lat.toFixed(5); S.lon = +c.lng.toFixed(5); S.z = z;
+      syncing = false; writeHash();
+    });
+    map.on('mousemove', e => { for (const o of panes) { o.ring.setLatLng(e.latlng); o.ring.setStyle({ opacity: o === P ? 0 : 0.9 }); } });
+    map.on('mouseout', () => { for (const o of panes) o.ring.setStyle({ opacity: 0 }); });
+    map.on('click', e => { if (opts.onclick) opts.onclick(e, P); });
+    panes.push(P);
+    return P;
+  }
+  function clearStage() {
+    for (const p of panes) p.map.remove();
+    panes = [];
+    $('grid').innerHTML = ''; $('grid').style.display = '';
+    const bar = $('tlbar'); if (bar) bar.remove();
+    $('stage').classList.remove('has-tl');
+    stopPlay();
+  }
+  function gridShape(cols, rows) { const g = $('grid'); g.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; g.style.gridTemplateRows = `repeat(${rows}, 1fr)`; }
+
+  // ================================================================ small UI helpers
+  const seg = (items, cur, attr, dis) => '<div class="seg">' + items.map(([k, lab, tip]) => `<button data-${attr}="${k}" class="${k == cur ? 'on' : ''}" ${dis && dis(k) ? 'disabled' : ''} ${tip ? `title="${tip}"` : ''}>${lab}</button>`).join('') + '</div>';
+  const yearOpts = (a, b, cur) => { let s = ''; for (let y = b; y >= a; y--) s += `<option ${y == cur ? 'selected' : ''}>${y}</option>`; return s; };
+  function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = 'none'; }, ms || 2500); }
+  function legendHTML(R) {
+    if (R.kind !== 'index') return '';
+    const [a, b] = R.range, mid = +((a + b) / 2).toFixed(2);
+    return `<div class="legend"><div class="bar" style="background:linear-gradient(90deg,${R.ramp.join(',')})"></div><div class="ticks"><span>${a}</span><span>${mid}</span><span>${b}</span></div><div class="ends"><span>← ${R.lo}</span><span>${R.hi} →</span></div></div>`;
+  }
+  function formulaFor(sk, rk) {
+    const SN = SENSORS[sk], R = RENDERS[rk];
+    if (R.kind === 'rgb') return 'R,G,B = ' + R.bands.map(b => SN.bandNames[b] + ' (' + roleName(b) + ')').join(', ');
+    return R.name + ' = ' + R.f.replace(/\b(S1|S2|B|G|R|N)\b/g, b => SN.bandNames[b]).replace(/\*/g, '·').replace(/-/g, ' − ').replace(/\+/g, ' + ');
+  }
+  const roleName = r => ({ B: 'blue', G: 'green', R: 'red', N: 'NIR', S1: 'SWIR1', S2: 'SWIR2' })[r];
+  function sensorCard(sk, hl) {
+    const SN = SENSORS[sk];
+    return `<div class="card ${hl ? 'hl' : ''}" data-card="${sk}"><h3>${SN.long}</h3><table>
+      <tr><td>Pixel</td><td>${SN.res}</td></tr><tr><td>Revisit</td><td>${SN.revisit}</td></tr>
+      <tr><td>Record</td><td>${SN.record}</td></tr><tr><td>From</td><td>${SN.who}</td></tr>
+      <tr><td>Good for</td><td>${SN.good}</td></tr></table>
+      <div class="links">${SN.gee.map(([id, l]) => `<a href="${GEE_CAT(id)}" target="_blank" rel="noopener" title="${id}">GEE: ${l}</a>`).join('')}<a href="${PC_CAT(SN.coll)}" target="_blank" rel="noopener">Planetary Computer</a></div></div>`;
+  }
+
+  // Wavelength diagram: each sensor's bands on 400–2350 nm, with the ones in use highlighted
+  function bandDiagram(sk, rk) {
+    const SN = SENSORS[sk], R = RENDERS[rk];
+    const W = 340, H = 64, x0 = 8, x1 = W - 8, lo = 400, hi = 2350;
+    const X = nm => x0 + (x1 - x0) * (Math.log(nm) - Math.log(lo)) / (Math.log(hi) - Math.log(lo));
+    const used = {};
+    if (R.kind === 'rgb') R.bands.forEach((b, i) => { used[SN.bandNames[b]] = ['#ff5a4f', '#4fd16b', '#5aa8ff'][i]; });
+    else (R.f.match(/\b(S1|S2|B|G|R|N)\b/g) || []).forEach(b => { used[SN.bandNames[b]] = 'var(--accent)'; });
+    let s = `<svg class="chart" width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Band positions for ${SN.name}">`;
+    s += `<defs><linearGradient id="vis" x1="0" x2="1"><stop offset="0" stop-color="#6a3dff"/><stop offset=".25" stop-color="#2f7bff"/><stop offset=".5" stop-color="#3fd06a"/><stop offset=".72" stop-color="#ffd23f"/><stop offset="1" stop-color="#ff3b30"/></linearGradient></defs>`;
+    s += `<rect x="${X(400)}" y="40" width="${X(700) - X(400)}" height="4" fill="url(#vis)" opacity=".8"/>`;
+    s += `<rect x="${X(700)}" y="40" width="${X(1300) - X(700)}" height="4" fill="#7a3b3b" opacity=".7"/><rect x="${X(1300)}" y="40" width="${X(2350) - X(1300)}" height="4" fill="#5a4a33" opacity=".7"/>`;
+    [['visible', 400, 700], ['near-IR', 700, 1300], ['shortwave IR', 1300, 2350]].forEach(([t, a, b]) => { s += `<text x="${(X(a) + X(b)) / 2}" y="58" text-anchor="middle">${t}</text>`; });
+    SN.spectral.forEach(([nm, lab, a, b]) => {
+      const c = used[nm];
+      s += `<rect x="${X(a)}" y="${c ? 8 : 16}" width="${Math.max(2.5, X(b) - X(a))}" height="${c ? 28 : 20}" rx="1.5" fill="${c || 'rgba(255,255,255,.18)'}"><title>${nm} ${lab}: ${a}–${b} nm</title></rect>`;
+      if (c) s += `<text x="${(X(a) + X(b)) / 2}" y="6" text-anchor="middle" style="fill:var(--ink);font-size:9.5px">${nm}</text>`;
+    });
+    return s + '</svg>';
+  }
+
+  // ================================================================ VIEW 1: sensors side by side
+  const SENS_ORDER = ['landsat', 's2', 'modis', 'naip'];
+  function viewSensors() {
+    clearStage(); gridShape(2, 2);
+    const side = $('side');
+    side.innerHTML = `<h2>One place, four instruments</h2>
+      <p>Pasadena on the same summer day from various sources.</p>
+      <div class="row"><label>Year</label><select id="s_year">${yearOpts(2017, 2025, S.year)}</select><select id="s_season">${Object.entries(SEASONS).map(([k, v]) => `<option value="${k}" ${k === S.season ? 'selected' : ''}>${v.name}</option>`).join('')}</select></div>
+      <h2>Show</h2>${seg(RENDER_ORDER.map(k => [k, RENDERS[k].name]), S.render, 'r')}
+      <div id="s_rinfo"></div>
+      <h2>The instruments</h2>${SENS_ORDER.map(k => sensorCard(k)).join('')}
+      <p class="note">MODIS daily repeat at 500 m; Landsat every 8 days at 30 m back to the 1980s; Sentinel-2 every 5 days at 10 m since 2017.</p>`;
+    const ps = SENS_ORDER.map((k, i) => makePane($('grid'), { zoom: i === 0, scale: true, attrib: i === 3 }));
+    ps.forEach((p, i) => { p.el.addEventListener('mouseenter', () => { document.querySelectorAll('[data-card]').forEach(c => c.classList.toggle('hl', c.dataset.card === SENS_ORDER[i])); }); });
+    function draw() {
+      const R = RENDERS[S.render];
+      $('s_rinfo').innerHTML = `<div class="card"><b>${R.long || R.name}</b><p>${R.what}</p>${legendHTML(R)}</div>`;
+      SENS_ORDER.forEach((sk, i) => {
+        const SN = SENSORS[sk], p = ps[i], sp = stdSpec(sk, S.year, S.season);
+        p.setTitle(`<b>${SN.name}</b> <span class="tag">${SN.res}</span><div class="sub">${R.name} · ${sp.desc}</div>`);
+        if (!renderOK(sk, S.render)) { p.show(null); p.setNA(`${SN.name} has no ${R.needs ? roleName(R.needs) : 'calibrated'} band${R.needs ? '' : 's'}, so no ${R.name} here.<br>NAIP records only blue, green, red and near-infrared.`); return; }
+        p.show(pcLayer(sp.reg, tileQuery(sk, S.render, sp.ctx, sp.sel), SN.maxNative));
+      });
+      writeHash();
+    }
+    side.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { S.render = b.dataset.r; side.querySelectorAll('[data-r]').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('s_year').onchange = e => { S.year = +e.target.value; draw(); };
+    $('s_season').onchange = e => { S.season = e.target.value; draw(); };
+    draw();
+  }
+
+  // ================================================================ VIEW 2: bands & indices, with a pixel inspector
+  let pins = [];
+  function viewBands() {
+    clearStage(); gridShape(2, 1);
+    const side = $('side');
+    const sensorSeg = () => seg(SENS_ORDER.map(k => [k, SENSORS[k].name]), S.bsensor, 'bs');
+    side.innerHTML = `<h2>Sensor &amp; period</h2>${sensorSeg()}
+      <div class="row"><label>Year</label><select id="b_year">${yearOpts(2017, 2025, S.year)}</select><select id="b_season">${Object.entries(SEASONS).map(([k, v]) => `<option value="${k}" ${k === S.season ? 'selected' : ''}>${v.name}</option>`).join('')}</select></div>
+      <h2>Band combination or index</h2><div id="b_rseg"></div>
+      <div id="b_info"></div>
+      <h2>Pixel inspector <span class="tag">Sentinel-2</span></h2>
+      <p class="note">Click up to three spots on either map (try a lawn, a roof and the reservoir behind Devil's Gate). For each, the page pulls every Sentinel-2 scene of <b id="b_iyear">${S.year}</b> at that pixel, drops cloudy dates using the scene classification layer, and plots the reflectance spectrum and the NDVI calendar.</p>
+      <div class="pinlist" id="pinlist"></div>
+      <div id="spec"></div><div id="ndvits"></div>`;
+    const left = makePane($('grid'), { zoom: true, scale: true, onclick: addPin });
+    const right = makePane($('grid'), { attrib: true, onclick: addPin });
+    function draw() {
+      if (!renderOK(S.bsensor, S.brender)) S.brender = 'ndvi';
+      const SN = SENSORS[S.bsensor], R = RENDERS[S.brender], sp = stdSpec(S.bsensor, S.year, S.season);
+      $('b_rseg').innerHTML = seg(RENDER_ORDER.map(k => [k, RENDERS[k].name]), S.brender, 'br', k => !renderOK(S.bsensor, k));
+      $('b_rseg').querySelectorAll('[data-br]').forEach(b => b.onclick = () => { S.brender = b.dataset.br; draw(); });
+      $('b_info').innerHTML = `<div class="card"><b>${R.long || R.name}</b> <span class="tag">${SN.name}</span>
+        <div class="formula">${formulaFor(S.bsensor, S.brender)}</div>${bandDiagram(S.bsensor, S.brender)}
+        <p>${R.what}</p>${legendHTML(R)}${SN.noCalib ? '<p class="note">NAIP is uncalibrated 8-bit imagery: index values shift from flight to flight.</p>' : ''}</div>`;
+      left.setTitle(`<b>${SN.name} · true color</b> <span class="tag">${SN.res}</span><div class="sub">${sp.desc}</div>`);
+      right.setTitle(`<b>${SN.name} · ${R.name}</b><div class="sub">${formulaFor(S.bsensor, S.brender)}</div>`);
+      left.show(pcLayer(sp.reg, tileQuery(S.bsensor, 'tc', sp.ctx, sp.sel), SN.maxNative));
+      right.show(pcLayer(sp.reg, tileQuery(S.bsensor, S.brender, sp.ctx, sp.sel), SN.maxNative));
+      $('b_iyear').textContent = S.year;
+      writeHash();
+    }
+    side.querySelectorAll('[data-bs]').forEach(b => b.onclick = () => { S.bsensor = b.dataset.bs; side.querySelectorAll('[data-bs]').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('b_year').onchange = e => { S.year = +e.target.value; draw(); refetchPins(); };
+    $('b_season').onchange = e => { S.season = e.target.value; draw(); };
+    draw();
+    pins.forEach(pn => drawPinMarkers(pn));
+    renderPins();
+  }
+
+  // ---------------------------------------------------------------- pixel inspector
+  const S2_SPEC = [['B02', 'blue', 490], ['B03', 'green', 560], ['B04', 'red', 665], ['B05', 're1', 705], ['B06', 're2', 740], ['B07', 're3', 783], ['B08', 'NIR', 842], ['B11', 'SWIR1', 1610], ['B12', 'SWIR2', 2190]];
+  const CLEAR_SCL = new Set([4, 5, 6, 7, 11]);
+  function addPin(e) {
+    if (pins.length >= 3) { const old = pins.shift(); old.markers.forEach(m => m.remove()); }
+    const used = new Set(pins.map(p => p.slot));
+    const slot = [0, 1, 2].find(i => !used.has(i));
+    const pn = { slot, lat: e.latlng.lat, lon: e.latlng.lng, obs: null, status: 'loading', markers: [] };
+    pins.push(pn); drawPinMarkers(pn); renderPins(); fetchPin(pn);
+  }
+  function drawPinMarkers(pn) {
+    pn.markers.forEach(m => m.remove()); pn.markers = [];
+    for (const p of panes) pn.markers.push(L.circleMarker([pn.lat, pn.lon], { radius: 7, color: '#fff', weight: 2, fillColor: SERIES_HEX[pn.slot], fillOpacity: 1 }).addTo(p.map));
+  }
+  function refetchPins() { pins.forEach(pn => { pn.obs = null; pn.status = 'loading'; fetchPin(pn); }); renderPins(); }
+  async function fetchPin(pn) {
+    const year = S.year, token = {}; pn.token = token;
+    try {
+      const pt = { type: 'Point', coordinates: [pn.lon, pn.lat] };
+      const r = await fetch(STAC + 'search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ collections: ['sentinel-2-l2a'], intersects: pt, datetime: `${year}-01-01T00:00:00Z/${year}-12-31T23:59:59Z`, limit: 200, query: { 'eo:cloud_cover': { lt: 60 } }, sortby: [{ field: 'datetime', direction: 'asc' }] }) });
+      const items = (await r.json()).features || [];
+      const seen = new Set(), todo = [];
+      for (const it of items) { const d = it.properties.datetime.slice(0, 10); if (!seen.has(d)) { seen.add(d); todo.push(it); } }
+      pn.total = todo.length; pn.done = 0; pn.obs = [];
+      const assets = S2_SPEC.map(b => 'assets=' + b[0]).join('&') + '&assets=SCL';
+      let k = 0;
+      async function worker() {
+        while (k < todo.length) {
+          const it = todo[k++];
+          try {
+            const j = await (await fetch(`${PC}item/point/${pn.lon},${pn.lat}?collection=sentinel-2-l2a&item=${it.id}&${assets}`)).json();
+            if (pn.token !== token) return;
+            const v = j.values; const off = (it.properties['s2:processing_baseline'] || '00') >= '04.00' ? 1000 : 0;
+            if (v && v[0] > 0) pn.obs.push({ date: it.properties.datetime.slice(0, 10), refl: v.slice(0, S2_SPEC.length).map(x => (x - off) / 10000), scl: v[S2_SPEC.length] });
+          } catch (err) { /* skip this date */ }
+          pn.done++; if (pn.done % 4 === 0 || pn.done === pn.total) renderPins();
+        }
+      }
+      await Promise.all([0, 1, 2, 3, 4, 5].map(worker));
+      if (pn.token !== token) return;
+      pn.obs.sort((a, b) => a.date < b.date ? -1 : 1);
+      pn.status = 'done'; pn.year = year;
+    } catch (err) { pn.status = 'error'; }
+    renderPins();
+  }
+  function renderPins() {
+    const list = $('pinlist'); if (!list) return;
+    list.innerHTML = pins.map(pn => {
+      const clear = pn.obs ? pn.obs.filter(o => CLEAR_SCL.has(o.scl)).length : 0;
+      const st = pn.status === 'loading' ? `loading ${pn.done || 0}/${pn.total || '…'} scenes` : pn.status === 'error' ? 'failed' : `${clear} clear of ${pn.obs.length} scenes`;
+      return `<div><i style="background:${SERIES[pn.slot]}"></i>${pn.lat.toFixed(4)}, ${pn.lon.toFixed(4)} <span class="note">· ${st}</span><span class="x" data-unpin="${pn.slot}">✕</span></div>`;
+    }).join('') || '<div class="note">No pixels pinned yet.</div>';
+    list.querySelectorAll('[data-unpin]').forEach(x => x.onclick = () => { const i = pins.findIndex(p => p.slot == x.dataset.unpin); pins[i].markers.forEach(m => m.remove()); pins.splice(i, 1); renderPins(); });
+    $('spec').innerHTML = pins.length ? specChart() : '';
+    $('ndvits').innerHTML = pins.length ? ndviChart() : '';
+    wireTips();
+  }
+  const median = a => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : NaN; };
+  function specChart() {
+    const W = 340, H = 190, m = { l: 34, r: 8, t: 22, b: 30 };
+    const lo = 450, hi = 2250, X = nm => m.l + (W - m.l - m.r) * (nm - lo) / (hi - lo);
+    let ymax = 0.1;
+    const lines = pins.map(pn => {
+      const cl = (pn.obs || []).filter(o => CLEAR_SCL.has(o.scl));
+      if (!cl.length) return null;
+      const v = S2_SPEC.map((b, i) => median(cl.map(o => o.refl[i])));
+      ymax = Math.max(ymax, ...v); return { pn, v, n: cl.length };
+    }).filter(Boolean);
+    ymax = Math.min(0.8, Math.ceil(ymax * 10) / 10);
+    const Y = r => H - m.b - (H - m.t - m.b) * Math.max(0, r) / ymax;
+    let s = `<svg class="chart" width="100%" viewBox="0 0 ${W} ${H}"><text x="${m.l}" y="12" style="fill:var(--ink);font-size:11.5px">Reflectance spectrum (median of clear dates)</text>`;
+    s += `<rect x="${X(lo)}" y="${m.t}" width="${X(700) - X(lo)}" height="${H - m.t - m.b}" fill="rgba(255,255,255,.03)"/><rect x="${X(1300)}" y="${m.t}" width="${X(hi) - X(1300)}" height="${H - m.t - m.b}" fill="rgba(255,255,255,.03)"/>`;
+    for (let t = 0; t <= ymax + 1e-9; t += ymax > 0.4 ? 0.2 : 0.1) s += `<line class="gr" x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${m.l - 5}" y="${Y(t) + 3}" text-anchor="end">${t.toFixed(1)}</text>`;
+    [500, 1000, 1500, 2000].forEach(nm => { s += `<text x="${X(nm)}" y="${H - m.b + 13}" text-anchor="middle">${nm}</text>`; });
+    s += `<text x="${(W + m.l) / 2}" y="${H - 3}" text-anchor="middle">wavelength (nm): visible | near-IR | shortwave IR</text>`;
+    s += `<line class="ax" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
+    lines.forEach(({ pn, v, n }) => {
+      s += `<polyline fill="none" stroke="${SERIES_HEX[pn.slot]}" stroke-width="2" stroke-linejoin="round" points="${S2_SPEC.map((b, i) => X(b[2]) + ',' + Y(v[i])).join(' ')}"/>`;
+      S2_SPEC.forEach((b, i) => { s += `<circle cx="${X(b[2])}" cy="${Y(v[i])}" r="4" fill="${SERIES_HEX[pn.slot]}" stroke="var(--panel)" stroke-width="2" data-tip="<b>${b[0]}</b> ${b[1]} · ${b[2]} nm<br>reflectance ${v[i].toFixed(3)} (median of ${n} clear dates)"/>`; });
+    });
+    if (!lines.length) s += `<text x="${W / 2}" y="${H / 2}" text-anchor="middle">${pins.some(p => p.status === 'loading') ? 'fetching…' : 'no clear observations'}</text>`;
+    return s + '</svg>';
+  }
+  function ndviChart() {
+    const W = 340, H = 170, m = { l: 34, r: 8, t: 22, b: 24 };
+    const yr = S.year, t0 = Date.UTC(yr, 0, 1), t1 = Date.UTC(yr + 1, 0, 1);
+    const X = d => m.l + (W - m.l - m.r) * (Date.parse(d) - t0) / (t1 - t0);
+    const Y = v => H - m.b - (H - m.t - m.b) * (v + 0.2) / 1.2;
+    let s = `<svg class="chart" width="100%" viewBox="0 0 ${W} ${H}"><text x="${m.l}" y="12" style="fill:var(--ink);font-size:11.5px">NDVI through ${yr} (clear dates only)</text>`;
+    [-0.2, 0, 0.2, 0.4, 0.6, 0.8, 1].forEach(t => { s += `<line class="${t === 0 ? 'ax' : 'gr'}" x1="${m.l}" x2="${W - m.r}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${m.l - 5}" y="${Y(t) + 3}" text-anchor="end">${t}</text>`; });
+    'JFMAMJJASOND'.split('').forEach((c, i) => { s += `<text x="${X(`${yr}-${String(i + 1).padStart(2, '0')}-15`)}" y="${H - m.b + 14}" text-anchor="middle">${c}</text>`; });
+    pins.forEach(pn => {
+      const pts = (pn.obs || []).filter(o => CLEAR_SCL.has(o.scl)).map(o => ({ d: o.date, v: (o.refl[6] - o.refl[2]) / (o.refl[6] + o.refl[2]) })).filter(o => isFinite(o.v));
+      if (!pts.length) return;
+      s += `<polyline fill="none" stroke="${SERIES_HEX[pn.slot]}" stroke-width="2" stroke-linejoin="round" opacity=".85" points="${pts.map(o => X(o.d) + ',' + Y(o.v)).join(' ')}"/>`;
+      pts.forEach(o => { s += `<circle cx="${X(o.d)}" cy="${Y(o.v)}" r="4" fill="${SERIES_HEX[pn.slot]}" stroke="var(--panel)" stroke-width="2" data-tip="${o.d}<br>NDVI ${o.v.toFixed(2)}"/>`; });
+    });
+    return s + '</svg>';
+  }
+  function wireTips() {
+    const tip = $('tip');
+    document.querySelectorAll('[data-tip]').forEach(el => {
+      el.onmouseenter = () => { tip.innerHTML = el.dataset.tip; tip.style.display = 'block'; el.setAttribute('r', 6); };
+      el.onmousemove = ev => { tip.style.left = (ev.clientX + 12) + 'px'; tip.style.top = (ev.clientY + 12) + 'px'; };
+      el.onmouseleave = () => { tip.style.display = 'none'; el.setAttribute('r', 4); };
+    });
+  }
+
+  // ================================================================ VIEW 3: compositing
+  function viewComposite() {
+    clearStage(); gridShape(3, 2);
+    const side = $('side');
+    side.innerHTML = `<h2>From many scenes to one map</h2>
+      <p>A satellite passes every few days, but each pass catches some cloud, haze or shadow. A <b>composite</b> combines the scenes in a window into one image, using a rule that picks or blends values pixel by pixel. Six rules on the same stack of scenes:</p>
+      <div class="row"><label>Sensor</label>${seg([['s2', 'Sentinel-2'], ['landsat', 'Landsat 8/9']], S.csensor, 'cs')}</div>
+      <div class="row"><label>Window</label><select id="c_year">${yearOpts(2017, 2025, S.cyear)}</select><select id="c_season">${Object.entries(SEASONS).map(([k, v]) => `<option value="${k}" ${k === S.cseason ? 'selected' : ''}>${v.name}</option>`).join('')}</select></div>
+      <div class="row"><label>Show</label>${seg([['tc', 'True color'], ['cir', 'Color infrared'], ['ndvi', 'NDVI']], S.crender, 'cr')}</div>
+      <p class="note">Tip: the wet season (Jan–Mar) has the storms, so the single-scene panels are more likely to catch cloud. Zoom out to the LA basin to see whole scenes, and their seams.</p>
+      <div id="c_methods"></div>`;
+    const ps = METHOD_ORDER.map((k, i) => makePane($('grid'), { zoom: i === 0, scale: i === 3, attrib: i === 5 }));
+    ps.forEach((p, i) => p.el.addEventListener('mouseenter', () => document.querySelectorAll('[data-mcard]').forEach(c => c.classList.toggle('hl', c.dataset.mcard === METHOD_ORDER[i]))));
+    function draw() {
+      const p = period(S.cyear, S.cseason), SN = SENSORS[S.csensor];
+      $('c_methods').innerHTML = METHOD_ORDER.map(k => { const M = METHODS[k]; return `<div class="card" data-mcard="${k}"><h3>${M.name}</h3><p style="margin:2px 0">${M.what}</p>${M.gee ? `<div class="formula" style="color:#d6d7d5">${M.gee}</div>` : ''}</div>`; }).join('');
+      METHOD_ORDER.forEach((k, i) => {
+        const M = METHODS[k], pane = ps[i];
+        if (M.ext) {
+          pane.setTitle(`<b>${M.name}</b><div class="sub">${S.cyear <= 2016 ? 2016 : Math.min(S.cyear, 2025)} annual mosaic · always Sentinel-2 · true color only</div>`);
+          pane.show(urlLayer(EOX(S.cyear), 15)); return;
+        }
+        const reg = { coll: SN.coll, start: p.start, end: p.end, cc: M.cc, sort: M.sort };
+        if (S.csensor === 'landsat') reg.platforms = LS_PLATFORMS(S.cyear);
+        pane.setTitle(`<b>${M.name}</b><div class="sub">${SN.name} · ${p.months}${M.cc != null ? ' · scenes ≤' + M.cc + '% cloud' : ' · all scenes'}</div>`);
+        pane.show(pcLayer(reg, tileQuery(S.csensor, S.crender, p, M.sel), SN.maxNative));
+      });
+      writeHash();
+    }
+    side.querySelectorAll('[data-cs]').forEach(b => b.onclick = () => { S.csensor = b.dataset.cs; side.querySelectorAll('[data-cs]').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    side.querySelectorAll('[data-cr]').forEach(b => b.onclick = () => { S.crender = b.dataset.cr; side.querySelectorAll('[data-cr]').forEach(x => x.classList.toggle('on', x === b)); draw(); });
+    $('c_year').onchange = e => { S.cyear = +e.target.value; draw(); };
+    $('c_season').onchange = e => { S.cseason = e.target.value; draw(); };
+    draw();
+  }
+
+  // ================================================================ VIEW 4: time lapse
+  const TL = {
+    landsat: { name: 'Landsat, every summer 1985–2025', short: 'Landsat annual', renders: true,
+      blurb: 'One dry-season (May–Sep) median per year from Landsat 5, 7, 8 and 9. Forty years at 30 m: watch the foothill subdivisions fill in, Devil\'s Gate reservoir fill and empty, and the 2009 Station fire scar in the mountains green back up.',
+      frames: () => { const f = []; for (let y = 1985; y <= 2025; y++) f.push({ key: y, label: String(y), small: LS_NAME(LS_PLATFORMS(y)), sk: 'landsat', reg: { coll: 'landsat-c2-l2', start: y + '-05-01', end: y + '-09-30', cc: 30, platforms: LS_PLATFORMS(y) }, sel: 'median', ctx: { start: y + '-05-01', end: y + '-09-30' } }); return f; } },
+    s2: { name: 'Sentinel-2, every summer 2017–2025', short: 'Sentinel-2 annual', renders: true,
+      blurb: 'Dry-season medians at 10 m. Shorter record, three times sharper than Landsat: individual buildings and freeway projects.',
+      frames: () => { const f = []; for (let y = 2017; y <= 2025; y++) f.push({ key: y, label: String(y), small: 'Sentinel-2', sk: 's2', reg: { coll: 'sentinel-2-l2a', start: y + '-05-01', end: y + '-09-30', cc: 30 }, sel: 'median', ctx: { start: y + '-05-01', end: y + '-09-30' } }); return f; } },
+    s2m: { name: 'Sentinel-2, month by month', short: 'Sentinel-2 monthly', renders: true, monthly: true,
+      blurb: 'Monthly medians for one year: the seasonal cycle. In a wet year (2023) the chaparral greens up Feb–Apr and browns by July while irrigated lawns stay green all year. Try NDVI. Wet months have few clear scenes, so some frames stay cloudy: that is the data.',
+      frames: () => { const y = S.tlmyear, f = []; for (let mth = 1; mth <= 12; mth++) { const a = `${y}-${String(mth).padStart(2, '0')}-01`, last = new Date(Date.UTC(y, mth, 0)).getUTCDate(), b = `${y}-${String(mth).padStart(2, '0')}-${last}`; f.push({ key: a, label: new Date(Date.UTC(y, mth - 1, 15)).toLocaleString('en', { month: 'short', timeZone: 'UTC' }) + ' ' + y, small: 'Sentinel-2 monthly median', sk: 's2', reg: { coll: 'sentinel-2-l2a', start: a, end: b, cc: 60 }, sel: 'median', ctx: { start: a, end: b } }); } return f; } },
+    modis: { name: 'MODIS, every July 2001–2025', short: 'MODIS annual', renders: true,
+      blurb: 'One 8-day composite from each July at 500 m. Too coarse to see a building, but the same pixel every year since 2000.',
+      frames: () => { const f = []; for (let y = 2001; y <= 2025; y++) f.push({ key: y, label: String(y), small: 'MODIS Terra 8-day', sk: 'modis', reg: { coll: 'modis-09A1-061', start: y + '-07-01', end: y + '-07-31', sort: 'recent' }, sel: 'first', ctx: {} }); return f; } },
+    daily: { name: 'MODIS, day by day (NASA GIBS)', short: 'MODIS daily', renders: false, daily: true,
+      blurb: 'The raw daily MODIS Terra picture at 250 m, clouds and all, from NASA GIBS (the imagery behind NASA Worldview). Default window: the late-February 2023 storms, when snow reached unusually low elevations in the San Gabriels. Zoom out to see the whole region.',
+      frames: () => { const f = []; let d = new Date(S.tld0 + 'T00:00:00Z'); const e = new Date(S.tld1 + 'T00:00:00Z'); while (d <= e && f.length < 60) { const k = d.toISOString().slice(0, 10); f.push({ key: k, label: k, small: 'MODIS Terra, ~10:30 local', url: GIBS(k) }); d = new Date(d.getTime() + 864e5); } return f; } },
+  };
+  let tlState = null, playH = null;
+  function stopPlay() { if (playH) { clearTimeout(playH); playH = null; } const b = document.querySelector('#tlbar .play'); if (b) b.textContent = '▶'; }
+  function viewTimelapse() {
+    clearStage();
+    const side = $('side');
+    const T = TL[S.tl];
+    side.innerHTML = `<h2>Time lapse</h2>${seg(Object.entries(TL).map(([k, v]) => [k, v.short]), S.tl, 'tl')}
+      <div class="card"><b>${T.name}</b><p>${T.blurb}</p></div>
+      ${T.monthly ? `<div class="row"><label>Year</label><select id="t_myear">${yearOpts(2018, 2025, S.tlmyear)}</select></div>` : ''}
+      ${T.daily ? `<div class="row"><label>From</label><input type="date" id="t_d0" value="${S.tld0}" min="2000-03-01" class="btn"><label>to</label><input type="date" id="t_d1" value="${S.tld1}" class="btn"></div><p class="note">Up to 60 days. Zoom out (level 7–9): GIBS daily imagery stops at 250 m.</p>` : ''}
+      ${T.renders ? `<h2>Show</h2>${seg(RENDER_ORDER.map(k => [k, RENDERS[k].name]), S.tlrender, 'tr', k => !renderOK(T.frames()[0].sk, k))}<div id="t_leg"></div>` : ''}
+      <h2>Compare</h2><label class="chk"><input type="checkbox" id="t_cmp" ${S.tlcmp ? 'checked' : ''}> side by side with the first frame</label>
+      <p class="note">Play waits for each frame's tiles before moving on, and loads the next two frames in the background, so the first pass is slower than the second. <code>space</code> plays, <code>←</code> <code>→</code> step.</p>`;
+    const frames = T.frames();
+    if (S.tli == null || S.tli >= frames.length) S.tli = frames.length - 1;
+    gridShape(S.tlcmp ? 2 : 1, 1);
+    const ref = S.tlcmp ? makePane($('grid'), { zoom: true, scale: true }) : null;
+    const main = makePane($('grid'), { zoom: !S.tlcmp, scale: !S.tlcmp, attrib: true });
+    const big = document.createElement('div'); big.className = 'bigyear'; main.el.appendChild(big);
+    let big0; if (ref) { big0 = document.createElement('div'); big0.className = 'bigyear'; ref.el.appendChild(big0); }
+    const cache = new Map();
+    function layerFor(i, pane) {
+      const f = frames[i]; const key = f.key + '|' + S.tlrender + '|' + (pane === ref ? 'ref' : 'main');
+      if (cache.has(key)) return cache.get(key);
+      const l = f.url ? urlLayer(f.url, 9) : pcLayer(f.reg, tileQuery(f.sk, S.tlrender, f.ctx, f.sel), SENSORS[f.sk].maxNative);
+      cache.set(key, l); return l;
+    }
+    function legend() { if ($('t_leg')) { const R = RENDERS[S.tlrender]; $('t_leg').innerHTML = R.kind === 'index' ? `<div class="card">${legendHTML(R)}</div>` : ''; } }
+    function show(i) {
+      S.tli = i; const f = frames[i];
+      main.show(layerFor(i, main));
+      main.retain([1, 2].filter(k => i + k < frames.length).map(k => layerFor(i + k, main)));
+      big.innerHTML = `${f.label}<small>${f.small}</small>`;
+      main.setTitle(`<b>${T.short}</b><div class="sub">${T.renders ? RENDERS[S.tlrender].name + ' · ' : ''}${f.label}</div>`);
+      $('tl_r').value = i; $('tl_lab').textContent = f.label;
+      writeHash();
+    }
+    function showRef() { if (!ref) return; const f = frames[0]; ref.show(layerFor(0, ref)); big0.innerHTML = `${f.label}<small>${f.small}</small>`; ref.setTitle(`<b>First frame</b><div class="sub">${f.label}</div>`); }
+    const bar = document.createElement('div'); bar.id = 'tlbar';
+    bar.innerHTML = `<button class="play" title="Play / pause (space)">▶</button><input type="range" id="tl_r" min="0" max="${frames.length - 1}" step="1"><span class="lab" id="tl_lab"></span><select id="tl_speed" title="Seconds per frame (at least; play also waits for tiles)"><option value="400">fast</option><option value="900" selected>normal</option><option value="1800">slow</option></select>`;
+    $('stage').appendChild(bar); $('stage').classList.add('has-tl');
+    $('tl_r').oninput = e => { stopPlay(); show(+e.target.value); };
+    bar.querySelector('.play').onclick = () => playH ? stopPlay() : play();
+    function play() {
+      bar.querySelector('.play').textContent = '❚❚';
+      const step = () => {
+        const next = (S.tli + 1) % frames.length;
+        const t0 = Date.now(); show(next);
+        const l = layerFor(next, main);
+        Promise.race([l.ready, new Promise(r => setTimeout(r, 20000))]).then(() => {
+          if (!playH) return;
+          playH = setTimeout(step, Math.max(0, +$('tl_speed').value - (Date.now() - t0)) + (next === frames.length - 1 ? 1200 : 0));
+        });
+      };
+      playH = setTimeout(step, 10);
+    }
+    tlState = { step: d => { stopPlay(); show(Math.max(0, Math.min(frames.length - 1, S.tli + d))); }, toggle: () => playH ? stopPlay() : play() };
+    side.querySelectorAll('[data-tl]').forEach(b => b.onclick = () => { S.tl = b.dataset.tl; S.tli = null; viewTimelapse(); });
+    side.querySelectorAll('[data-tr]').forEach(b => b.onclick = () => { S.tlrender = b.dataset.tr; side.querySelectorAll('[data-tr]').forEach(x => x.classList.toggle('on', x === b)); legend(); stopPlay(); showRef(); show(S.tli); });
+    $('t_cmp').onchange = e => { S.tlcmp = e.target.checked; viewTimelapse(); };
+    if ($('t_myear')) $('t_myear').onchange = e => { S.tlmyear = +e.target.value; S.tli = null; viewTimelapse(); };
+    if ($('t_d0')) {
+      const upd = () => { S.tld0 = $('t_d0').value; S.tld1 = $('t_d1').value; if (S.tld1 < S.tld0) S.tld1 = S.tld0; S.tli = null; viewTimelapse(); };
+      $('t_d0').onchange = upd; $('t_d1').onchange = upd;
+      if (S.z > 9) { for (const p of panes) p.map.setZoom(9); }
+    }
+    legend(); showRef(); show(S.tli);
+  }
+
+  // ================================================================ VIEW 5: fires
+  const GOES_D = window.GOES, FIRE_D = window.FIRES;
+  // boxes for summing GOES fire radiative power per fire (S, W, N, E)
+  const FIRE_BOX = { Palisades: [33.98, -118.75, 34.16, -118.45], Eaton: [34.14, -118.20, 34.27, -117.97] };
+  const FIRE_EVENTS = [['2025-01-07T18:30Z', 'Palisades fire reported, 10:30 am'], ['2025-01-08T02:18Z', 'Eaton fire reported, 6:18 pm']];
+  const pst = (t, opt) => new Date(t).toLocaleString('en-US', Object.assign({ timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }, opt || {}));
+  const GIBS_TC = {
+    terra: { name: 'MODIS Terra', layer: 'MODIS_Terra_CorrectedReflectance_TrueColor', when: '~10:30 am', res: '250 m' },
+    aqua: { name: 'MODIS Aqua', layer: 'MODIS_Aqua_CorrectedReflectance_TrueColor', when: '~1:30 pm', res: '250 m' },
+    noaa20: { name: 'VIIRS NOAA-20', layer: 'VIIRS_NOAA20_CorrectedReflectance_TrueColor', when: '~1:30 pm', res: '375 m' },
+  };
+  const gibs = (layer, date, level, ext) => `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_Level${level}/{z}/{y}/{x}.${ext}`;
+  const FIREMASK_CM = enc(JSON.stringify({ 7: [255, 214, 0, 255], 8: [255, 128, 0, 255], 9: [230, 20, 20, 255] }));
+  const BURN_PRE = { coll: 'sentinel-2-l2a', start: '2024-12-01', end: '2025-01-06', cc: 20 };
+  const BURN_POST = { coll: 'sentinel-2-l2a', start: '2025-01-15', end: '2025-02-28', cc: 20 };
+  const perimLayer = () => FIRE_D ? L.geoJSON(FIRE_D.perimeters, { pane: 'labels', style: { color: '#fff', weight: 1.6, dashArray: '5 4', fill: false }, interactive: false }) : null;
+  const missing = f => `<div class="card"><b>data/${f} is missing.</b><p>Run <code>python build_${f === 'goes.js' ? 'goes' : 'burn'}.py</code> in slides/satellites.</p></div>`;
+
+  function viewFires() {
+    clearStage();
+    const side = $('side');
+    side.innerHTML = `<h2>The January 2025 fires</h2>${seg([['goes', 'GOES-18, every 10 min'], ['daily', 'Daily smoke'], ['burn', 'Burn severity']], S.fm, 'fm')}<div id="f_body"></div>`;
+    side.querySelectorAll('[data-fm]').forEach(b => b.onclick = () => { S.fm = b.dataset.fm; S.fview = null; viewFires(); });
+    ({ goes: firesGoes, daily: firesDaily, burn: firesBurn })[S.fm]($('f_body'));
+    writeHash();
+  }
+  function frameBar(n, label, onShow) {
+    const bar = document.createElement('div'); bar.id = 'tlbar';
+    bar.innerHTML = `<button class="play" title="Play / pause (space)">▶</button><input type="range" id="tl_r" min="0" max="${n - 1}" step="1"><span class="lab" id="tl_lab" style="min-width:170px"></span><select id="tl_speed"><option value="150">fast</option><option value="400" selected>normal</option><option value="1000">slow</option></select>`;
+    $('stage').appendChild(bar); $('stage').classList.add('has-tl');
+    let i = 0;
+    const show = k => { i = k; $('tl_r').value = k; $('tl_lab').textContent = label(k); onShow(k); };
+    $('tl_r').oninput = e => { stopPlay(); show(+e.target.value); };
+    const play = (ready) => {
+      bar.querySelector('.play').textContent = '❚❚';
+      const step = () => { const t0 = Date.now(), k = (i + 1) % n; show(k); Promise.race([ready(k), new Promise(r => setTimeout(r, 15000))]).then(() => { if (playH) playH = setTimeout(step, Math.max(0, +$('tl_speed').value - (Date.now() - t0)) + (k === n - 1 ? 1500 : 0)); }); };
+      playH = setTimeout(step, 10);
+    };
+    return { show, get i() { return i; }, bar, play };
+  }
+
+  // ---------------------------------------------------------------- GOES-18 loop
+  function firesGoes(body) {
+    if (!GOES_D) { body.innerHTML = missing('goes.js'); return; }
+    const F = GOES_D.frames, [W, So, E, N] = GOES_D.box, bounds = [[So, W], [N, E]];
+    const frp = F.map(f => { const o = {}; for (const [nm, [s, w, n, e]] of Object.entries(FIRE_BOX)) o[nm] = f.fires.reduce((a, [la, lo, p]) => a + (la >= s && la <= n && lo >= w && lo <= e && p ? p : 0), 0); return o; });
+    body.innerHTML = `<p>GOES-18 sits 35,800 km above the equator at 137° W and images the western US every 5 minutes. Frames every 10 minutes from 8 am on 7 January to 6 pm on 8 January (Pacific time), built from NOAA's archive.</p>
+      <p class="note"><b>Day</b>: true color from the red and blue bands, with green synthesised from red, blue and near-IR (the ABI imager has no green band). <b>Night</b>: the 11 µm infrared band in grey (cold cloud tops white). Day and night: anything hot in the 3.9 µm band glows yellow to red.</p>
+      <div class="row"><label class="chk"><input type="checkbox" id="g_fdc" ${S.gfdc ? 'checked' : ''}> NOAA fire detections (FDC, 2 km pixels)</label></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="g_per"> final fire perimeters</label></div>
+      <div class="row" id="g_jump"></div>
+      <h2>Fire radiative power</h2><div id="g_frp"></div>
+      <p class="note">Sum of FDC fire radiative power (megawatts) over the pixels inside a box around each fire, per frame. Gaps are frames where smoke or cloud hid the fire or the detector rejected it. Other fires that night (Hurst, near Sylmar; Sunset, in the Hollywood Hills) appear in the loop but not in this chart.</p>`;
+    gridShape(1, 1);
+    const P = makePane($('grid'), { zoom: true, scale: true, attrib: true });
+    P.map.attributionControl.addAttribution('GOES-18 ABI: <a href="https://registry.opendata.aws/noaa-goes/">NOAA via AWS</a>');
+    if (!S.fview) P.map.fitBounds(bounds);
+    const ov = L.imageOverlay(GOES_D.dir + F[0].file, bounds).addTo(P.map);
+    const pts = L.layerGroup().addTo(P.map), per = perimLayer();
+    const big = document.createElement('div'); big.className = 'bigyear'; P.el.appendChild(big);
+    const pre = new Map();
+    const loaded = k => { if (!pre.has(k)) { const im = new Image(); pre.set(k, new Promise(r => { im.onload = im.onerror = r; })); im.src = GOES_D.dir + F[k].file; } return pre.get(k); };
+    function drawPts(k) {
+      pts.clearLayers(); if (!$('g_fdc').checked) return;
+      F[k].fires.forEach(([la, lo, p]) => L.circleMarker([la, lo], { radius: 3 + Math.sqrt(p || 1) / 5, color: '#fff', weight: 1, fillColor: '#ff3b30', fillOpacity: 0.55 }).bindTooltip(`FDC fire pixel<br>${p ? p.toFixed(0) + ' MW' : 'power not retrieved'}`).addTo(pts));
+    }
+    const fb = frameBar(F.length, k => pst(F[k].t) + ' PST', k => {
+      ov.setUrl(GOES_D.dir + F[k].file); drawPts(k); S.fgi = k;
+      big.innerHTML = `${pst(F[k].t, { weekday: undefined, month: undefined, day: undefined })}<small>${pst(F[k].t, { hour: undefined, minute: undefined })} · ${F[k].sun > 10 ? 'day' : F[k].sun > 0 ? 'dusk' : 'night'}</small>`;
+      P.setTitle(`<b>GOES-18 ABI</b> <span class="tag">0.5–2 km</span><div class="sub">${F[k].t.replace('T', ' ')} UTC · ${F[k].fires.length} fire pixels in view</div>`);
+      for (let j = 1; j <= 6; j++) loaded((k + j) % F.length);
+      drawFrp(k); writeHash();
+    });
+    tlState = { step: d => { stopPlay(); fb.show(Math.max(0, Math.min(F.length - 1, fb.i + d))); }, toggle: () => playH ? stopPlay() : fb.play(loaded) };
+    fb.bar.querySelector('.play').onclick = () => tlState.toggle();
+    $('g_fdc').onchange = e => { S.gfdc = e.target.checked; drawPts(fb.i); };
+    $('g_per').onchange = e => e.target.checked ? per.addTo(P.map) : P.map.removeLayer(per);
+    const idxAt = t => F.findIndex(f => f.t >= t);
+    $('g_jump').innerHTML = '<label>Jump</label>' + FIRE_EVENTS.map(([t, l], j) => `<button class="btn" data-ev="${j}" title="${l}">${l.split(' fire')[0]}</button>`).join('');
+    $('g_jump').querySelectorAll('[data-ev]').forEach(b => b.onclick = () => { stopPlay(); fb.show(Math.max(0, idxAt(FIRE_EVENTS[+b.dataset.ev][0]))); });
+    // FRP chart: two series, crosshair at the current frame, hover for values, click to jump
+    function drawFrp(k) {
+      const Wd = 340, H = 160, m = { l: 40, r: 8, t: 10, b: 22 }, n = F.length;
+      const ymax = Math.max(100, ...frp.map(o => Math.max(o.Palisades, o.Eaton))) * 1.05;
+      const X = j => m.l + (Wd - m.l - m.r) * j / (n - 1), Y = v => H - m.b - (H - m.t - m.b) * v / ymax;
+      let s = `<svg class="chart" width="100%" viewBox="0 0 ${Wd} ${H}" id="frpsvg">`;
+      const step = ymax > 8000 ? 2000 : ymax > 4000 ? 1000 : ymax > 1500 ? 500 : 200;
+      for (let v = 0; v <= ymax; v += step) s += `<line class="${v ? 'gr' : 'ax'}" x1="${m.l}" x2="${Wd - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 4}" y="${Y(v) + 3}" text-anchor="end">${v >= 1000 ? v / 1000 + 'k' : v}</text>`;
+      F.forEach((f, j) => { if (f.t.endsWith('T08:00Z')) s += `<line class="gr" x1="${X(j)}" x2="${X(j)}" y1="${m.t}" y2="${H - m.b}"/><text x="${X(j)}" y="${H - 6}" text-anchor="middle">${pst(f.t, { hour: undefined, minute: undefined, weekday: 'short' })}</text>`; });
+      FIRE_EVENTS.forEach(([t]) => { const j = idxAt(t); if (j >= 0) s += `<line x1="${X(j)}" x2="${X(j)}" y1="${m.t}" y2="${H - m.b}" stroke="rgba(255,255,255,.35)" stroke-dasharray="2 3"/>`; });
+      ['Palisades', 'Eaton'].forEach((nm, si) => {
+        let d = ''; frp.forEach((o, j) => { d += (o[nm] > 0 ? (d && frp[j - 1] && frp[j - 1][nm] > 0 ? 'L' : 'M') + X(j).toFixed(1) + ',' + Y(o[nm]).toFixed(1) : ''); });
+        s += `<path d="${d}" fill="none" stroke="${SERIES_HEX[si]}" stroke-width="2" stroke-linejoin="round"/>`;
+      });
+      s += `<line x1="${X(k)}" x2="${X(k)}" y1="${m.t}" y2="${H - m.b}" stroke="var(--accent)" stroke-width="1.5"/>`;
+      s += `<rect x="${m.l}" y="${m.t}" width="${Wd - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="frphit" style="cursor:pointer"/></svg>`;
+      s += `<div class="pinlist" style="flex-direction:row;gap:14px"><div><i style="background:${SERIES[0]}"></i>Palisades</div><div><i style="background:${SERIES[1]}"></i>Eaton</div><div class="note">MW, ${pst(F[k].t)}: ${frp[k].Palisades.toFixed(0)} / ${frp[k].Eaton.toFixed(0)}</div></div>`;
+      $('g_frp').innerHTML = s;
+      const hit = $('frphit'), tip = $('tip');
+      const jAt = ev => { const r = hit.getBoundingClientRect(); return Math.max(0, Math.min(n - 1, Math.round((ev.clientX - r.left) / r.width * (n - 1)))); };
+      hit.onmousemove = ev => { const j = jAt(ev); tip.innerHTML = `${pst(F[j].t)}<br>Palisades ${frp[j].Palisades.toFixed(0)} MW<br>Eaton ${frp[j].Eaton.toFixed(0)} MW`; tip.style.display = 'block'; tip.style.left = (ev.clientX + 12) + 'px'; tip.style.top = (ev.clientY + 12) + 'px'; };
+      hit.onmouseleave = () => { tip.style.display = 'none'; };
+      hit.onclick = ev => { stopPlay(); fb.show(jAt(ev)); };
+    }
+    fb.show(S.fgi != null && S.fgi < F.length ? S.fgi : Math.max(0, idxAt('2025-01-07T21:00Z')));
+  }
+
+  // ---------------------------------------------------------------- daily smoke
+  function firesDaily(body) {
+    const days = []; for (let d = Date.UTC(2025, 0, 4); d <= Date.UTC(2025, 0, 20); d += 864e5) days.push(new Date(d).toISOString().slice(0, 10));
+    body.innerHTML = `<p>One picture a day from each polar orbiter, as served by NASA Worldview. The Santa Ana winds of 7–9 January blow the smoke southwest over the ocean; from about 10 January the winds drop and smoke settles over the basin.</p>
+      <h2>Satellite</h2>${seg(Object.entries(GIBS_TC).map(([k, v]) => [k, v.name + ' · ' + v.when]), S.fsat, 'fs')}
+      <h2>Overlays</h2>
+      <div class="row"><label class="chk"><input type="checkbox" id="d_fire" ${S.dfire ? 'checked' : ''}> MODIS active fire, 1 km (Terra + Aqua, any overpass that day)</label></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="d_aod" ${S.daod ? 'checked' : ''}> aerosol optical depth (MODIS MAIAC)</label></div>
+      <div class="row"><label class="chk"><input type="checkbox" id="d_per"> final fire perimeters</label></div>
+      <div id="d_leg"></div>
+      <p class="note">Active fire comes from the MOD14A1/MYD14A1 daily fire mask (yellow low, orange nominal, red high confidence), computed live. Aerosol optical depth measures how much of the sunlight the column of air blocks: about 0.1 on a clear day, above 1 in thick smoke. MAIAC leaves gaps where it cannot separate smoke from cloud, which is often the thickest plume.</p>`;
+    gridShape(1, 1);
+    const P = makePane($('grid'), { zoom: true, scale: true, attrib: true });
+    if (!S.fview) P.map.fitBounds([[33.2, -119.6], [34.6, -117.2]]);
+    P.map.createPane('over'); P.map.getPane('over').style.zIndex = 420;
+    const per = perimLayer();
+    let fireL = null, aodL = null;
+    const big = document.createElement('div'); big.className = 'bigyear'; P.el.appendChild(big);
+    const fireLayer = d => {
+      const doy = Math.round((Date.parse(d) - Date.UTC(2025, 0, 1)) / 864e5) + 1, band = doy - (Math.floor((doy - 1) / 8) * 8 + 1) + 1;
+      return pcLayer({ coll: 'modis-14A1-061', start: d, end: d }, `collection=modis-14A1-061&assets=FireMask&asset_bidx=FireMask|${band}&colormap=${FIREMASK_CM}&exitwhenfull=False&skipcovered=False&pixel_selection=highest`, 10, 'over');
+    };
+    function overlays(d) {
+      if (fireL) P.map.removeLayer(fireL); if (aodL) P.map.removeLayer(aodL); fireL = aodL = null;
+      if ($('d_aod').checked) aodL = urlLayer(gibs('MODIS_Combined_MAIAC_L2G_AerosolOpticalDepth', d, 7, 'png'), 7, 'over', 0.65).addTo(P.map);
+      if ($('d_fire').checked) fireL = fireLayer(d).addTo(P.map);
+    }
+    const sat = () => GIBS_TC[S.fsat];
+    const base = new Map();
+    const baseFor = d => { const k = S.fsat + d; if (!base.has(k)) base.set(k, urlLayer(gibs(sat().layer, d, 9, 'jpg'), 9)); return base.get(k); };
+    const fb = frameBar(days.length, k => pst(days[k] + 'T21:00Z', { hour: undefined, minute: undefined }) + ', 2025', k => {
+      const d = days[k]; S.fdi = k;
+      P.show(baseFor(d)); P.retain([1, 2].filter(j => k + j < days.length).map(j => baseFor(days[k + j])));
+      overlays(d);
+      big.innerHTML = `${pst(d + 'T21:00Z', { weekday: undefined, hour: undefined, minute: undefined })}<small>${sat().name} · ${sat().when} PST</small>`;
+      P.setTitle(`<b>${sat().name} true color</b> <span class="tag">${sat().res}</span><div class="sub">${d} · NASA GIBS / Worldview</div>`);
+      writeHash();
+    });
+    tlState = { step: dd => { stopPlay(); fb.show(Math.max(0, Math.min(days.length - 1, fb.i + dd))); }, toggle: () => playH ? stopPlay() : fb.play(k => baseFor(days[k]).ready) };
+    fb.bar.querySelector('.play').onclick = () => tlState.toggle();
+    body.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { S.fsat = b.dataset.fs; body.querySelectorAll('[data-fs]').forEach(x => x.classList.toggle('on', x === b)); fb.show(fb.i); });
+    $('d_fire').onchange = e => { S.dfire = e.target.checked; overlays(days[fb.i]); };
+    $('d_aod').onchange = e => { S.daod = e.target.checked; overlays(days[fb.i]); };
+    $('d_per').onchange = e => e.target.checked ? per.addTo(P.map) : P.map.removeLayer(per);
+    fb.show(S.fdi != null && S.fdi < days.length ? S.fdi : days.indexOf('2025-01-08'));
+  }
+
+  // ---------------------------------------------------------------- burn severity (dNBR)
+  function firesBurn(body) {
+    if (!FIRE_D) { body.innerHTML = missing('fires.js'); return; }
+    const B = FIRE_D.burn[S.ff], st = B.stats, C = FIRE_D.classes;
+    const rk = S.frender;
+    const burned = ['low', 'moderate-low', 'moderate-high', 'high'].reduce((a, k) => a + st.inside[k], 0);
+    const fmt = v => Math.round(v).toLocaleString('en-US');
+    body.innerHTML = `<div class="row" style="margin-top:8px"><label>Fire</label>${seg([['palisades', 'Palisades'], ['eaton', 'Eaton']], S.ff, 'ff')}</div>
+      <div class="row"><label>Show</label>${seg([['tc', 'True color'], ['swir', 'SWIR'], ['nbr', 'NBR']], rk, 'fr')}</div>
+      <div class="card"><b>dNBR = NBR<sub>before</sub> − NBR<sub>after</sub></b><div class="formula">NBR = (B8A − B12) / (B8A + B12)</div>
+      <p>Fire strips leaves (near-IR falls) and leaves char and dry soil (shortwave IR rises), so NBR drops where it burned. Medians of clear Sentinel-2 scenes at 20 m: before ${B.pre_dates.join(', ')}; after ${B.post_dates.join(', ')}.</p>
+      <div class="legend"><div style="display:flex;gap:2px;margin:6px 0 2px">${C.slice(2).map(c => `<div style="flex:1;height:10px;border-radius:2px;background:rgba(${c.rgba.slice(0, 3).join(',')},1)"></div>`).join('')}</div>
+      <div class="ticks">${C.slice(2).map(c => `<span>≥${c.lo}</span>`).join('')}</div><div class="ticks">${C.slice(2).map(c => `<span>${c.name}</span>`).join('')}</div></div>
+      <p class="note">Thresholds from Key &amp; Benson (2006), used by the USGS. Below 0.1 is drawn transparent.</p></div>
+      <h2>Check against the official perimeter</h2>
+      <div class="card"><table>
+        <tr><td>Official</td><td>${fmt(st.perimeter_acres_official)} acres (CAL FIRE)</td></tr>
+        ${C.slice(1).map(c => `<tr><td>${c.name}</td><td>${fmt(st.inside[c.name])} acres · ${(100 * st.inside[c.name] / st.perimeter_acres_grid).toFixed(0)}%</td></tr>`).join('')}
+        <tr><td>dNBR ≥ 0.1</td><td><b>${fmt(burned)} acres, ${(100 * st.inside_burned_share).toFixed(0)}% of the perimeter</b></td></tr>
+        <tr><td>Outside</td><td>${fmt(st.outside_burned_acres)} acres with dNBR ≥ 0.1 beyond the perimeter, inside the frame</td></tr>
+      </table></div>
+      <p class="note">Inside the line, dNBR marks most of the area as burned; the rest is unburned islands, roads, and places the method misses. Outside, the scattered "burned" pixels are mostly noise, shadows and other change, which is why agencies map perimeters from the air and the ground, not from dNBR alone. The thresholds were calibrated for forest and shrubland: in the Altadena and Palisades neighbourhoods a destroyed house and a scorched garden can score the same. Hover the right-hand map to read dNBR.</p>`;
+    gridShape(3, 1);
+    const ps = [makePane($('grid'), { zoom: true, scale: true }), makePane($('grid'), {}), makePane($('grid'), { attrib: true })];
+    ps[2].map.attributionControl.addAttribution('Perimeters: CAL FIRE');
+    if (!S.fview) ps[0].map.fitBounds(B.bounds);
+    S.fview = 1;
+    const ctxPre = { start: BURN_PRE.start, end: BURN_PRE.end }, ctxPost = { start: BURN_POST.start, end: BURN_POST.end };
+    ps[0].setTitle(`<b>Before</b> · ${RENDERS[rk].name}<div class="sub">Sentinel-2 median, ${BURN_PRE.start} – ${BURN_PRE.end}, scenes ≤20% cloud</div>`);
+    ps[1].setTitle(`<b>After</b> · ${RENDERS[rk].name}<div class="sub">Sentinel-2 median, ${BURN_POST.start} – ${BURN_POST.end}, scenes ≤20% cloud</div>`);
+    ps[2].setTitle(`<b>dNBR burn severity</b><div class="sub" id="b_read">over the after image · hover for values</div>`);
+    ps[0].show(pcLayer(BURN_PRE, tileQuery('s2', rk, ctxPre, 'median'), 15));
+    ps[1].show(pcLayer(BURN_POST, tileQuery('s2', rk, ctxPost, 'median'), 15));
+    ps[2].show(pcLayer(BURN_POST, tileQuery('s2', 'tc', ctxPost, 'median'), 15));
+    L.imageOverlay(B.img, B.bounds, { pane: 'overlayPane' }).addTo(ps[2].map);
+    ps.forEach(p => perimLayer().addTo(p.map));
+    // dNBR values: decode the 8-bit image (value = (dNBR + 0.5) · 200, 255 = no data) once
+    const img = new Image(); let px = null;
+    img.onload = () => { const c = document.createElement('canvas'); c.width = B.width; c.height = B.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0); px = g.getImageData(0, 0, B.width, B.height).data; };
+    img.src = B.val;
+    const merc = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+    const [[s, w], [n, e]] = B.bounds;
+    ps[2].map.on('mousemove', ev => {
+      if (!px) return;
+      const x = Math.floor((ev.latlng.lng - w) / (e - w) * B.width), y = Math.floor((merc(n) - merc(ev.latlng.lat)) / (merc(n) - merc(s)) * B.height);
+      if (x < 0 || y < 0 || x >= B.width || y >= B.height) { $('b_read').textContent = 'outside the dNBR frame'; return; }
+      const v = px[(y * B.width + x) * 4];
+      if (v === 255) { $('b_read').textContent = 'no clear observation'; return; }
+      const d = v / 200 - 0.5, cl = C.filter(c => d >= c.lo).pop();
+      $('b_read').textContent = `dNBR ${d.toFixed(2)} · ${cl.name}`;
+    });
+    body.querySelectorAll('[data-ff]').forEach(b => b.onclick = () => { S.ff = b.dataset.ff; S.fview = null; viewFires(); });
+    body.querySelectorAll('[data-fr]').forEach(b => b.onclick = () => { S.frender = b.dataset.fr; viewFires(); });
+  }
+
+  // ================================================================ Earth Engine code for the current view
+  const GEE_LS = {
+    l89: `// Landsat 8 + 9, Collection 2 Level 2, renamed to common band names
+function prepL89(img) {
+  var qa = img.select('QA_PIXEL');
+  var clear = qa.bitwiseAnd(1 << 3).eq(0).and(qa.bitwiseAnd(1 << 4).eq(0)); // no cloud, no shadow
+  return img.select(['SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7'],
+                    ['blue','green','red','nir','swir1','swir2'])
+    .multiply(0.0000275).add(-0.2).updateMask(clear)  // comment out updateMask to match the page
+    .copyProperties(img, ['system:time_start', 'CLOUD_COVER']);
+}`,
+    l57: `// Landsat 5 / 7 (TM, ETM+) use different band numbers for the same colours
+function prepL57(img) {
+  var qa = img.select('QA_PIXEL');
+  var clear = qa.bitwiseAnd(1 << 3).eq(0).and(qa.bitwiseAnd(1 << 4).eq(0));
+  return img.select(['SR_B1','SR_B2','SR_B3','SR_B4','SR_B5','SR_B7'],
+                    ['blue','green','red','nir','swir1','swir2'])
+    .multiply(0.0000275).add(-0.2).updateMask(clear)
+    .copyProperties(img, ['system:time_start', 'CLOUD_COVER']);
+}`,
+  };
+  const GEE_S2 = `// Sentinel-2 surface reflectance (the HARMONIZED collection already removes the 2022 offset)
+function prepS2(img) {
+  var scl = img.select('SCL');
+  var clear = scl.neq(3).and(scl.neq(8)).and(scl.neq(9)).and(scl.neq(10)); // shadow, cloud, cirrus
+  return img.select(['B2','B3','B4','B8','B11','B12'], ['blue','green','red','nir','swir1','swir2'])
+    .divide(10000).updateMask(clear)  // comment out updateMask to match the page
+    .copyProperties(img, ['system:time_start', 'CLOUDY_PIXEL_PERCENTAGE']);
+}`;
+  const GEE_MODIS = `// MODIS Terra 8-day surface reflectance, 500 m
+function prepMODIS(img) {
+  return img.select(['sur_refl_b03','sur_refl_b04','sur_refl_b01','sur_refl_b02','sur_refl_b06','sur_refl_b07'],
+                    ['blue','green','red','nir','swir1','swir2'])
+    .multiply(0.0001).copyProperties(img, ['system:time_start']);
+}`;
+  const GEE_NAIP = `// NAIP: 8-bit aerial imagery, bands R G B N
+function prepNAIP(img) {
+  return img.select(['B','G','R','N'], ['blue','green','red','nir']).multiply(0.0012)
+    .copyProperties(img, ['system:time_start']);
+}`;
+  function geeCollection(sk, start, end, cc, platforms) {
+    if (sk === 's2') return { pre: GEE_S2, col: `ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')\n  .filterBounds(roi).filterDate('${start}', '${end}')${cc != null ? `\n  .filter(ee.Filter.lte('CLOUDY_PIXEL_PERCENTAGE', ${cc}))` : ''}\n  .map(prepS2)`, cloud: "'CLOUDY_PIXEL_PERCENTAGE'" };
+    if (sk === 'modis') return { pre: GEE_MODIS, col: `ee.ImageCollection('MODIS/061/MOD09A1')\n  .filterDate('${start}', '${end}').map(prepMODIS)`, cloud: null };
+    if (sk === 'naip') return { pre: GEE_NAIP, col: `ee.ImageCollection('USDA/NAIP/DOQQ')\n  .filterBounds(roi).filterDate('${start}', '${end}').map(prepNAIP)`, cloud: null };
+    const ps = platforms || ['landsat-8', 'landsat-9'];
+    const ids = { 'landsat-5': ['LANDSAT/LT05/C02/T1_L2', 'prepL57'], 'landsat-7': ['LANDSAT/LE07/C02/T1_L2', 'prepL57'], 'landsat-8': ['LANDSAT/LC08/C02/T1_L2', 'prepL89'], 'landsat-9': ['LANDSAT/LC09/C02/T1_L2', 'prepL89'] };
+    const parts = ps.map(p => `ee.ImageCollection('${ids[p][0]}').map(${ids[p][1]})`);
+    const pre = [...new Set(ps.map(p => ids[p][1]))].map(f => f === 'prepL89' ? GEE_LS.l89 : GEE_LS.l57).join('\n\n');
+    let col = parts[0]; for (let i = 1; i < parts.length; i++) col += `\n  .merge(${parts[i]})`;
+    return { pre, col: `${col}\n  .filterBounds(roi).filterDate('${start}', '${end}')${cc != null ? `\n  .filter(ee.Filter.lte('CLOUD_COVER', ${cc}))` : ''}`, cloud: "'CLOUD_COVER'" };
+  }
+  // GEE filterDate end is exclusive
+  const nextDay = d => new Date(Date.parse(d + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
+  const GEE_IDX = { ndvi: "img.normalizedDifference(['nir', 'red'])", ndwi: "img.normalizedDifference(['green', 'nir'])", ndmi: "img.normalizedDifference(['nir', 'swir1'])", ndbi: "img.normalizedDifference(['swir1', 'nir'])", nbr: "img.normalizedDifference(['nir', 'swir2'])",
+    evi: "img.expression('2.5 * (N - R) / (N + 6 * R - 7.5 * B + 1)', {N: img.select('nir'), R: img.select('red'), B: img.select('blue')})" };
+  const GEE_ROLE = { B: 'blue', G: 'green', R: 'red', N: 'nir', S1: 'swir1', S2: 'swir2' };
+  function geeVis(rk) {
+    const R = RENDERS[rk];
+    if (R.kind === 'rgb') return { add: 'img', vis: `{bands: [${R.bands.map(b => `'${GEE_ROLE[b]}'`).join(', ')}], min: 0, max: ${R.max}, gamma: ${R.gamma}}` };
+    return { add: `${GEE_IDX[rk]}`, vis: `{min: ${R.range[0]}, max: ${R.range[1]}, palette: [${R.ramp.map(c => `'${c.slice(1)}'`).join(', ')}]}` };
+  }
+  function geeCode() {
+    const head = `// ${document.title}: Earth Engine version of the "${S.view}" view\nvar roi = ee.Geometry.Point([${S.lon.toFixed(4)}, ${S.lat.toFixed(4)}]);\nMap.setCenter(${S.lon.toFixed(4)}, ${S.lat.toFixed(4)}, ${S.z});\n`;
+    const idxFn = `function addNDVI(img) { return img.addBands(img.normalizedDifference(['nir', 'red']).rename('NDVI')); }`;
+    if (S.view === 'sensors' || S.view === 'bands') {
+      const rk = S.view === 'sensors' ? S.render : S.brender;
+      const list = S.view === 'sensors' ? SENS_ORDER.filter(k => renderOK(k, rk)) : [S.bsensor];
+      let pre = new Set(), body = '';
+      list.forEach(sk => {
+        const sp = stdSpec(sk, S.year, S.season);
+        const c = geeCollection(sk, sp.reg.start, nextDay(sp.reg.end), sp.reg.cc, sp.reg.platforms);
+        c.pre.split('\n\n').forEach(x => pre.add(x));
+        const comp = sp.sel === 'median' ? '.median()' : sk === 'modis' ? ".sort('system:time_start', false).first()" : '.mosaic()';
+        const v = geeVis(rk), name = SENSORS[sk].name;
+        const vn = sk.replace(/\W/g, '');
+        body += `\n// ${name}: ${sp.desc}\nvar ${vn} = ${c.col.replace(/\n/g, '\n  ')}\n  ${comp};\n`;
+        if (S.view === 'bands' && rk !== 'tc') body += `Map.addLayer(${vn}, ${geeVis('tc').vis}, '${name} true color');\n`;
+        body += `Map.addLayer(${v.add.replace(/img/g, vn)}, ${v.vis}, '${name} ${RENDERS[rk].name}');\n`;
+      });
+      return head + '\n' + [...pre].join('\n\n') + '\n' + body;
+    }
+    if (S.view === 'composite') {
+      const p = period(S.cyear, S.cseason);
+      const c = geeCollection(S.csensor, p.start, nextDay(p.end), null, S.csensor === 'landsat' ? LS_PLATFORMS(S.cyear) : null);
+      const v = geeVis(S.crender);
+      let s = head + '\n' + c.pre + '\n' + idxFn + '\n\nvar col = ' + c.col + ';\nprint(\'scenes in window\', col.size());\nvar CLOUD = ' + c.cloud + ';\n\n';
+      const ccf = S.csensor === 's2' ? 'CLOUDY_PIXEL_PERCENTAGE' : 'CLOUD_COVER';
+      METHOD_ORDER.filter(k => !METHODS[k].ext).forEach(k => {
+        const M = METHODS[k];
+        const src = M.cc != null ? `col.filter(ee.Filter.lte('${ccf}', ${M.cc}))` : 'col';
+        let expr = M.gee.split('  //')[0].replace(/^col/, src);
+        if (k === 'green') expr += ".select(['blue','green','red','nir','swir1','swir2'])";
+        s += `var ${k} = ${expr};\nMap.addLayer(${v.add.replace(/img/g, k)}, ${v.vis}, '${M.name}', ${k === 'median'});\n`;
+      });
+      return s + `\n// Production cloud-free mosaics in GEE: see also the Cloud Score+ collection for Sentinel-2.\n`;
+    }
+    if (S.view === 'timelapse') {
+      const T = TL[S.tl];
+      if (T.daily) return head + `\n// Daily MODIS true color for ${S.tld0} … ${S.tld1}, as a GIF\nvar col = ee.ImageCollection('MODIS/061/MOD09GA')\n  .filterDate('${S.tld0}', '${nextDay(S.tld1)}')\n  .select(['sur_refl_b01', 'sur_refl_b04', 'sur_refl_b03']);\nvar region = roi.buffer(150000).bounds();\nprint(ui.Thumbnail(col.map(function (img) { return img.visualize({min: 0, max: 3000, gamma: 1.4}); }),\n  {region: region, dimensions: 600, framesPerSecond: 3, crs: 'EPSG:3857'}));\n`;
+      const f0 = T.frames()[0];
+      const rk = S.tlrender, v = geeVis(rk);
+      if (T.monthly) {
+        const c = geeCollection('s2', `${S.tlmyear}-01-01`, `${S.tlmyear + 1}-01-01`, 60, null);
+        return head + '\n' + c.pre + `\n\n// Monthly Sentinel-2 medians for ${S.tlmyear}\nvar frames = ee.ImageCollection(ee.List.sequence(1, 12).map(function (m) {\n  var start = ee.Date.fromYMD(${S.tlmyear}, m, 1);\n  var img = ${c.col.replace(/filterDate\('[^']+', '[^']+'\)/, 'filterDate(start, start.advance(1, \'month\'))').replace(/\n/g, '\n    ')}\n    .median();\n  return ${v.add}.visualize(${v.vis}).set('system:time_start', start.millis());\n}));\nvar region = roi.buffer(8000).bounds();\nprint(ui.Thumbnail(frames, {region: region, dimensions: 600, framesPerSecond: 2, crs: 'EPSG:3857'}));\n`;
+      }
+      const first = T.frames()[0].key, last = T.frames().slice(-1)[0].key;
+      let mk;
+      if (S.tl === 'modis') mk = geeCollection('modis', '2001-07-01', '2001-08-01');
+      else mk = geeCollection(S.tl === 's2' ? 's2' : 'landsat', '2000-05-01', '2000-10-01', 30, S.tl === 's2' ? null : ['landsat-5', 'landsat-7', 'landsat-8', 'landsat-9']);
+      const colExpr = mk.col.replace(/filterDate\('[^']+', '[^']+'\)/, S.tl === 'modis' ? "filterDate(ee.Date.fromYMD(y, 7, 1), ee.Date.fromYMD(y, 8, 1))" : "filterDate(ee.Date.fromYMD(y, 5, 1), ee.Date.fromYMD(y, 10, 1))").replace(/\n/g, '\n    ');
+      return head + '\n' + mk.pre + `\n\n// One ${S.tl === 'modis' ? 'July 8-day composite' : 'dry-season median'} per year, ${first}–${last}, as a GIF\n` +
+        (S.tl === 'landsat' ? '// (the page also drops Landsat 7 once Landsat 8 is up, 2013 on, to avoid its scan-line gaps)\n' : '') +
+        `var frames = ee.ImageCollection(ee.List.sequence(${first}, ${last}).map(function (y) {\n  var img = ${colExpr}\n    .${S.tl === 'modis' ? 'first' : 'median'}();\n  return ${v.add}.visualize(${v.vis}).set('year', y);\n}));\nvar region = roi.buffer(${S.tl === 'modis' ? 40000 : 8000}).bounds();\nprint(ui.Thumbnail(frames, {region: region, dimensions: 600, framesPerSecond: 3, crs: 'EPSG:3857'}));\n`;
+    }
+    if (S.view === 'fires' && S.fm === 'goes') {
+      const t = GOES_D && S.fgi != null ? GOES_D.frames[S.fgi].t.replace('Z', ':00Z') : '2025-01-07T21:00:00Z';
+      return head + `
+// GOES-18 ABI, CONUS sector, all 16 bands every 5 minutes
+var t = ee.Date('${t}');
+var img = ee.ImageCollection('NOAA/GOES/18/MCMIPC').filterDate(t, t.advance(5, 'minute')).first();
+// bands are stored as scaled integers; each has its own scale and offset property
+function band(b) {
+  return img.select('CMI_' + b).multiply(ee.Number(img.get('CMI_' + b + '_scale')))
+    .add(ee.Number(img.get('CMI_' + b + '_offset')));
+}
+var red = band('C02'), blue = band('C01'), nir = band('C03');
+var green = red.multiply(0.45).add(blue.multiply(0.45)).add(nir.multiply(0.1));  // ABI has no green band
+Map.addLayer(ee.Image.cat([red, green, blue]), {min: 0.03, max: 0.9, gamma: 2.2}, 'GOES-18 true color');
+var bt39 = band('C07');  // 3.9 µm brightness temperature, kelvin
+Map.addLayer(bt39.updateMask(bt39.gt(330)), {min: 330, max: 370, palette: ['ffd600', 'ff8000', 'e61414']}, 'hot at 3.9 µm');
+// NOAA's fire product: ee.ImageCollection('NOAA/GOES/18/FDCC'), bands Mask and Power
+`;
+    }
+    if (S.view === 'fires' && S.fm === 'daily') {
+      const d = S.fdi != null ? new Date(Date.UTC(2025, 0, 4) + S.fdi * 864e5).toISOString().slice(0, 10) : '2025-01-08';
+      return head + `
+// One day of MODIS: Terra surface reflectance and the Terra + Aqua daily fire masks
+var day = ee.Date('${d}');
+var refl = ee.ImageCollection('MODIS/061/MOD09GA').filterDate(day, day.advance(1, 'day')).first();
+Map.addLayer(refl, {bands: ['sur_refl_b01', 'sur_refl_b04', 'sur_refl_b03'], min: 0, max: 3000, gamma: 1.4}, 'MODIS Terra true color');
+var fire = ee.ImageCollection('MODIS/061/MOD14A1').merge(ee.ImageCollection('MODIS/061/MYD14A1'))
+  .filterDate(day, day.advance(1, 'day')).select('FireMask').max();
+Map.addLayer(fire.updateMask(fire.gte(7)), {min: 7, max: 9, palette: ['ffd600', 'ff8000', 'e61414']}, 'active fire (7–9 = low–high confidence)');
+`;
+    }
+    if (S.view === 'fires' && S.fm === 'burn') {
+      return head + `
+// dNBR for the ${S.ff === 'eaton' ? 'Eaton' : 'Palisades'} fire from Sentinel-2, as on the page
+function nbr(img) {
+  var scl = img.select('SCL');
+  var clear = scl.eq(2).or(scl.eq(4)).or(scl.eq(5)).or(scl.eq(7)).or(scl.eq(11));  // burned ground is often class 2
+  return img.normalizedDifference(['B8A', 'B12']).rename('NBR').updateMask(clear);
+}
+var s2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED').filterBounds(roi.buffer(10000))
+  .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20));
+var before = s2.filterDate('${BURN_PRE.start}', '${nextDay(BURN_PRE.end)}').map(nbr).median();
+var after = s2.filterDate('${BURN_POST.start}', '${nextDay(BURN_POST.end)}').map(nbr).median();
+var dnbr = before.subtract(after).rename('dNBR');
+// USGS classes (Key & Benson 2006): 0.10 low, 0.27 moderate-low, 0.44 moderate-high, 0.66 high
+var cls = dnbr.gte(0.10).add(dnbr.gte(0.27)).add(dnbr.gte(0.44)).add(dnbr.gte(0.66));
+Map.addLayer(cls.selfMask(), {min: 1, max: 4, palette: ['ffe678', 'fdae3c', 'e6550d', '961428']}, 'dNBR class');
+// burned area (dNBR >= 0.1) within 8 km of the point, in acres
+var acres = dnbr.gte(0.1).multiply(ee.Image.pixelArea()).divide(4046.86)
+  .reduceRegion({reducer: ee.Reducer.sum(), geometry: roi.buffer(8000), scale: 20, maxPixels: 1e9});
+print('acres with dNBR >= 0.1 within 8 km', acres);
+`;
+    }
+    return head;
+  }
+
+  // ================================================================ URL hash
+  let hashLock = false;
+  function writeHash() {
+    if (hashLock) return;
+    const h = new URLSearchParams({ v: S.view, c: `${S.lat.toFixed(4)},${S.lon.toFixed(4)},${S.z}`, r: S.render, y: S.year, s: S.season, bs: S.bsensor, br: S.brender, cs: S.csensor, cy: S.cyear, cse: S.cseason, cr: S.crender, tl: S.tl, tr: S.tlrender, tm: S.tlmyear, td: S.tld0 + ',' + S.tld1, ti: S.tli == null ? '' : S.tli, tc: S.tlcmp ? 1 : 0, fm: S.fm, fg: S.fgi == null ? '' : S.fgi, fs: S.fsat, fd: S.fdi == null ? '' : S.fdi, ff: S.ff, fr: S.frender });
+    history.replaceState(null, '', '#' + h.toString());
+  }
+  function readHash() {
+    const h = new URLSearchParams(location.hash.slice(1)); if (!h.get('v')) return;
+    const num = (k, d) => h.get(k) != null && h.get(k) !== '' && isFinite(+h.get(k)) ? +h.get(k) : d;
+    const pick = (k, d, ok) => ok(h.get(k)) ? h.get(k) : d;
+    S.view = pick('v', S.view, v => VIEWS[v]);
+    const c = (h.get('c') || '').split(',').map(Number); if (c.length === 3 && c.every(isFinite)) { S.lat = c[0]; S.lon = c[1]; S.z = c[2]; }
+    S.render = pick('r', S.render, v => RENDERS[v]); S.year = num('y', S.year); S.season = pick('s', S.season, v => SEASONS[v]);
+    S.bsensor = pick('bs', S.bsensor, v => SENSORS[v]); S.brender = pick('br', S.brender, v => RENDERS[v]);
+    S.csensor = pick('cs', S.csensor, v => v === 's2' || v === 'landsat'); S.cyear = num('cy', S.cyear); S.cseason = pick('cse', S.cseason, v => SEASONS[v]); S.crender = pick('cr', S.crender, v => ['tc', 'cir', 'ndvi'].includes(v));
+    S.tl = pick('tl', S.tl, v => TL[v]); S.tlrender = pick('tr', S.tlrender, v => RENDERS[v]); S.tlmyear = num('tm', S.tlmyear);
+    const td = (h.get('td') || '').split(','); if (td.length === 2 && /^\d{4}-\d\d-\d\d$/.test(td[0]) && /^\d{4}-\d\d-\d\d$/.test(td[1])) { S.tld0 = td[0]; S.tld1 = td[1]; }
+    S.tli = h.get('ti') === '' || h.get('ti') == null ? null : num('ti', null); S.tlcmp = h.get('tc') === '1';
+    S.fm = pick('fm', S.fm, v => ['goes', 'daily', 'burn'].includes(v)); S.fsat = pick('fs', S.fsat, v => GIBS_TC[v]); S.ff = pick('ff', S.ff, v => v === 'eaton' || v === 'palisades'); S.frender = pick('fr', S.frender, v => ['tc', 'swir', 'nbr'].includes(v));
+    S.fgi = h.get('fg') ? num('fg', null) : null; S.fdi = h.get('fd') ? num('fd', null) : null; if (S.view === 'fires') S.fview = 1;
+  }
+
+  // ================================================================ wiring
+  const VIEWS = { sensors: viewSensors, bands: viewBands, composite: viewComposite, timelapse: viewTimelapse, fires: viewFires };
+  function go(v) {
+    S.view = v; tlState = null;
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    VIEWS[v](); $('side').scrollTop = 0;
+  }
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { S.fview = null; go(b.dataset.v); });
+  $('site').innerHTML = '<option value="">Go to…</option>' + SITES.map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
+  $('site').onchange = e => { const s = SITES[+e.target.value]; if (!s) return; S.lat = s.lat; S.lon = s.lon; S.z = s.z; if (panes[0]) panes[0].map.setView([s.lat, s.lon], s.z); e.target.value = ''; };
+  $('labels').onchange = e => { S.labels = e.target.checked; panes.forEach(p => S.labels ? p.labels.addTo(p.map) : p.map.removeLayer(p.labels)); };
+  $('geebtn').onclick = () => { $('geecode').textContent = geeCode(); $('geemodal').classList.add('open'); };
+  $('geecopy').onclick = () => navigator.clipboard.writeText($('geecode').textContent).then(() => toast('Copied'), () => toast('Select the code and copy it by hand'));
+  $('linkbtn').onclick = () => { writeHash(); navigator.clipboard.writeText(location.href).then(() => toast('Link copied'), () => toast(location.href, 6000)); };
+  $('helpbtn').onclick = () => $('helpmodal').classList.add('open');
+  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.hasAttribute('data-close')) m.classList.remove('open'); }));
+  document.addEventListener('keydown', e => {
+    if (e.target.matches('input, select, textarea')) return;
+    if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+    else if (e.key >= '1' && e.key <= '5') { S.fview = null; go(Object.keys(VIEWS)[+e.key - 1]); }
+    else if (e.key === 'l' || e.key === 'L') { $('labels').click(); }
+    else if (e.key === '?') $('helpmodal').classList.toggle('open');
+    else if (tlState && e.key === ' ') { e.preventDefault(); tlState.toggle(); }
+    else if (tlState && e.key === 'ArrowRight') tlState.step(1);
+    else if (tlState && e.key === 'ArrowLeft') tlState.step(-1);
+  });
+
+  readHash();
+  go(S.view);
+})();
+</script>
+</body>
+</html>
