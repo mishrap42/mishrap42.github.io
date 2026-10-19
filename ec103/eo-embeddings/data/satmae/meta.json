@@ -1,0 +1,78 @@
+{
+ "name": "SatMAE (fMoW-Sentinel, ViT-L)",
+ "short": "SatMAE",
+ "org": "Stanford",
+ "year": 2022,
+ "native": "8 \u00d7 8 patch of 10 m Sentinel-2 L1C (80 m); three band-group tokens averaged; 1,024 dimensions; computed at 4 offsets for a 40 m grid",
+ "source": "SatMAE ViT-L pretrained checkpoint (Zenodo 7338613) on Sentinel-2 L1C May\u2013September medians",
+ "attribution": "SatMAE \u00a9 Cong et al. 2022 (weights CC-BY 4.0, code CC BY-NC 4.0).",
+ "id": "satmae",
+ "scale": 4,
+ "shape": [
+  392,
+  445
+ ],
+ "years": {
+  "2023": {
+   "rgb": {
+    "all": "satmae/rgb_all_2023.webp",
+    "city": "satmae/rgb_city_2023.webp"
+   },
+   "vec": {
+    "file": "satmae/vec_2023.bin.gz",
+    "n": 95168
+   }
+  },
+  "2024": {
+   "rgb": {
+    "all": "satmae/rgb_all_2024.webp",
+    "city": "satmae/rgb_city_2024.webp"
+   },
+   "vec": {
+    "file": "satmae/vec_2024.bin.gz",
+    "n": 95168
+   }
+  },
+  "2025": {
+   "rgb": {
+    "all": "satmae/rgb_all_2025.webp",
+    "city": "satmae/rgb_city_2025.webp"
+   },
+   "vec": {
+    "file": "satmae/vec_2025.bin.gz",
+    "n": 95168
+   }
+  }
+ },
+ "change": {
+  "2023_2024": {
+   "file": "satmae/chg_2023_2024.png",
+   "p50": 0.0365,
+   "p95": 0.1089,
+   "p99": 0.2118
+  },
+  "2024_2025": {
+   "file": "satmae/chg_2024_2025.png",
+   "p50": 0.0765,
+   "p95": 0.8358,
+   "p99": 1.0597
+  }
+ },
+ "debias": "Chip-position component removed (34% of variance)",
+ "similarity": "Cosine after centering and PCA to 64 dimensions (84% of variance)",
+ "pca_k_var": 0.8368,
+ "pca_var": {
+  "all": [
+   0.2626,
+   0.072,
+   0.0519
+  ],
+  "city": [
+   0.1528,
+   0.0921,
+   0.0528
+  ]
+ },
+ "dims": 64,
+ "bytes": 14183360
+}

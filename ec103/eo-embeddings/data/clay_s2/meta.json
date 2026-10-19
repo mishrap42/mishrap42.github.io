@@ -1,0 +1,78 @@
+{
+ "name": "Clay v1.5 (Sentinel-2)",
+ "short": "Clay",
+ "org": "Clay Foundation",
+ "year": 2024,
+ "native": "8 \u00d7 8 patch of 10 m Sentinel-2 (80 m), 1,024 dimensions; computed at 4 offsets for a 40 m grid",
+ "source": "Clay v1.5 on Sentinel-2 L2A May\u2013September medians",
+ "attribution": "Clay v1.5 \u00a9 Clay Foundation (Apache-2.0); contains modified Copernicus Sentinel data.",
+ "id": "clay_s2",
+ "scale": 4,
+ "shape": [
+  392,
+  445
+ ],
+ "years": {
+  "2023": {
+   "rgb": {
+    "all": "clay_s2/rgb_all_2023.webp",
+    "city": "clay_s2/rgb_city_2023.webp"
+   },
+   "vec": {
+    "file": "clay_s2/vec_2023.bin.gz",
+    "n": 95168
+   }
+  },
+  "2024": {
+   "rgb": {
+    "all": "clay_s2/rgb_all_2024.webp",
+    "city": "clay_s2/rgb_city_2024.webp"
+   },
+   "vec": {
+    "file": "clay_s2/vec_2024.bin.gz",
+    "n": 95168
+   }
+  },
+  "2025": {
+   "rgb": {
+    "all": "clay_s2/rgb_all_2025.webp",
+    "city": "clay_s2/rgb_city_2025.webp"
+   },
+   "vec": {
+    "file": "clay_s2/vec_2025.bin.gz",
+    "n": 95168
+   }
+  }
+ },
+ "change": {
+  "2023_2024": {
+   "file": "clay_s2/chg_2023_2024.png",
+   "p50": 0.0671,
+   "p95": 0.1834,
+   "p99": 0.3037
+  },
+  "2024_2025": {
+   "file": "clay_s2/chg_2024_2025.png",
+   "p50": 0.1304,
+   "p95": 1.0097,
+   "p99": 1.218
+  }
+ },
+ "debias": "Chip-position component removed (5% of variance)",
+ "similarity": "Cosine after centering and PCA to 64 dimensions (81% of variance)",
+ "pca_k_var": 0.8072,
+ "pca_var": {
+  "all": [
+   0.1955,
+   0.1051,
+   0.0664
+  ],
+  "city": [
+   0.1461,
+   0.1091,
+   0.0682
+  ]
+ },
+ "dims": 64,
+ "bytes": 14282128
+}

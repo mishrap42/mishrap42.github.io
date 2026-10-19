@@ -1,0 +1,96 @@
+{
+ "sites": [
+  {
+   "id": "rosebowl",
+   "name": "Rose Bowl & Brookside",
+   "ll": [
+    34.1613,
+    -118.1676
+   ],
+   "year": 2024
+  },
+  {
+   "id": "altadena",
+   "name": "West Altadena (after the fire)",
+   "ll": [
+    34.189,
+    -118.158
+   ],
+   "year": 2025
+  }
+ ],
+ "models": {
+  "satmae": {
+   "rosebowl": {
+    "chip_px": 96,
+    "chip_m": 960,
+    "r": 0.88,
+    "masked": "76% of group-1 patches masked (groups masked independently)",
+    "files": [
+     "recon/satmae_rosebowl_orig.png",
+     "recon/satmae_rosebowl_seen.png",
+     "recon/satmae_rosebowl_recon.png"
+    ]
+   },
+   "altadena": {
+    "chip_px": 96,
+    "chip_m": 960,
+    "r": 0.71,
+    "masked": "76% of group-1 patches masked (groups masked independently)",
+    "files": [
+     "recon/satmae_altadena_orig.png",
+     "recon/satmae_altadena_seen.png",
+     "recon/satmae_altadena_recon.png"
+    ]
+   }
+  },
+  "prithvi": {
+   "rosebowl": {
+    "chip_px": 224,
+    "chip_m": 6720,
+    "r": 0.84,
+    "masked": "75% of spatiotemporal patches masked",
+    "files": [
+     "recon/prithvi_rosebowl_orig.png",
+     "recon/prithvi_rosebowl_seen.png",
+     "recon/prithvi_rosebowl_recon.png"
+    ]
+   },
+   "altadena": {
+    "chip_px": 224,
+    "chip_m": 6720,
+    "r": 0.89,
+    "masked": "75% of spatiotemporal patches masked",
+    "files": [
+     "recon/prithvi_altadena_orig.png",
+     "recon/prithvi_altadena_seen.png",
+     "recon/prithvi_altadena_recon.png"
+    ]
+   }
+  },
+  "clay_s2": {
+   "rosebowl": {
+    "chip_px": 256,
+    "chip_m": 2560,
+    "r": 0.33,
+    "masked": "75% of patches masked",
+    "files": [
+     "recon/clay_s2_rosebowl_orig.png",
+     "recon/clay_s2_rosebowl_seen.png",
+     "recon/clay_s2_rosebowl_recon.png"
+    ]
+   },
+   "altadena": {
+    "chip_px": 256,
+    "chip_m": 2560,
+    "r": 0.47,
+    "masked": "75% of patches masked",
+    "files": [
+     "recon/clay_s2_altadena_orig.png",
+     "recon/clay_s2_altadena_seen.png",
+     "recon/clay_s2_altadena_recon.png"
+    ]
+   }
+  }
+ }
+}

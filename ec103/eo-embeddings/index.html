@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pasadena in Embedding Space</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg: #101214; --panel: #16191c; --panel2: #1d2125; --ink: #f2f2f0; --muted: #a7aaad; --faint: #6f7377;
+    --accent: #ffb347; --accent2: #6cc4ff; --line: rgba(255,255,255,.14);
+    --in: #ff7a45; --out: #6cc4ff; --noise: #a7aaad;
+    font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-size: 14px; }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button, select, input { font: inherit; color: inherit; }
+  code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+
+  #app { display: grid; grid-template-rows: auto 1fr; grid-template-columns: 370px 1fr; height: 100%; }
+  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 14px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: .01em; white-space: nowrap; }
+  nav { display: flex; gap: 2px; background: #0c0e10; border-radius: 8px; padding: 3px; }
+  nav button { background: none; border: 0; padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+  nav button:hover { color: var(--ink); }
+  nav button.on { background: var(--panel2); color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); }
+  nav button kbd { font-size: 10px; color: var(--faint); margin-left: 4px; font-family: inherit; }
+  .hspace { flex: 1; }
+  .hctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  select, .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
+  .btn:hover { border-color: var(--muted); }
+  label.chk { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+
+  aside { overflow-y: auto; border-right: 1px solid var(--line); background: var(--panel); padding: 12px 14px 40px; }
+  aside h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 8px; font-weight: 600; }
+  aside h2:first-child { margin-top: 2px; }
+  aside p { line-height: 1.45; margin: 6px 0; color: #d6d7d5; }
+  aside .note { color: var(--muted); font-size: 12.5px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; color: #d6d7d5; }
+  .seg button:hover:not(:disabled) { border-color: var(--muted); }
+  .seg button.on { border-color: var(--accent); color: var(--accent); background: #2a2114; }
+  .seg button:disabled { opacity: .35; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
+  .row > label { color: var(--muted); min-width: 64px; }
+  .row input[type=range] { flex: 1; accent-color: var(--accent); min-width: 120px; }
+  .row .val { font-variant-numeric: tabular-nums; color: var(--accent); min-width: 44px; text-align: right; }
+  .card { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
+  .card h3 { margin: 0 0 4px; font-size: 14px; }
+  .card table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  .card td { padding: 2px 0; vertical-align: top; }
+  .card td:first-child { color: var(--muted); width: 82px; padding-right: 8px; }
+  .legend .bar { height: 10px; border-radius: 3px; margin: 6px 0 3px; }
+  .legend .ticks { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  table.stats { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  table.stats th { color: var(--muted); font-weight: 500; text-align: right; padding: 2px 4px; }
+  table.stats th:first-child, table.stats td:first-child { text-align: left; }
+  table.stats td { text-align: right; padding: 2px 4px; border-top: 1px solid var(--line); }
+  table.probes { font-size: 12px; }
+  table.cmp { margin: 8px 0; font-size: 12px; } table.cmp td, table.cmp th { text-align: left; }
+  .recon { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 6px 0 4px; }
+  .recon figure { margin: 0; } .recon img { width: 100%; display: block; border-radius: 3px; image-rendering: pixelated; }
+  .recon figcaption { font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+  table.probes th { font-size: 11px; padding: 2px 2px; text-align: center; }
+  table.probes td.r2 { text-align: center; padding: 3px 2px; border-top: 1px solid var(--panel); font-weight: 600; }
+  table.probes tr.lvl td { text-align: left; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-size: 11px; padding-top: 8px; border: 0; }
+  table.probes tr.prow { cursor: pointer; }
+  table.probes tr.prow:hover td:first-child { color: var(--accent); }
+  table.probes tr.prow.on td:first-child { color: var(--accent); font-weight: 600; }
+
+  main { position: relative; overflow: hidden; background: #0a0b0c; }
+  .grid { position: absolute; inset: 0; display: grid; gap: 3px; background: #000; }
+  .pane { position: relative; overflow: hidden; background: #0a0b0c; }
+  .pane .map { position: absolute; inset: 0; }
+  .pane .phead { position: absolute; z-index: 800; top: 6px; left: 6px; right: 6px; display: flex; gap: 8px; align-items: flex-start; pointer-events: none; }
+  .pane .ptitle { background: rgba(10,11,12,.82); border-radius: 6px; padding: 5px 9px; line-height: 1.3; pointer-events: auto; max-width: 85%; }
+  .pane .ptitle b { font-size: 13.5px; }
+  .pane .ptitle .sub { color: var(--muted); font-size: 12px; }
+  .pane .spin { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.2); border-top-color: var(--accent); border-radius: 50%; animation: sp .8s linear infinite; margin-top: 7px; display: none; }
+  .pane.loading .spin { display: block; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .leaflet-container { font: inherit; background: #0a0b0c; }
+  .leaflet-image-layer.px { image-rendering: pixelated; }
+  .leaflet-control-attribution { background: rgba(10,11,12,.7) !important; color: var(--faint) !important; font-size: 10px; }
+  .leaflet-control-attribution a { color: var(--muted); }
+  .leaflet-control-scale-line { background: rgba(10,11,12,.6); color: var(--ink); border-color: var(--muted); }
+  .leaflet-bar a { background: var(--panel); color: var(--ink); border-bottom-color: var(--line); }
+  .leaflet-bar a:hover { background: #2a2e33; }
+  .leaflet-interactive.query { cursor: pointer; }
+
+  svg.chart text { fill: var(--muted); font-size: 10.5px; }
+  svg.chart .ax { stroke: rgba(255,255,255,.25); stroke-width: 1; }
+  svg.chart .gr { stroke: rgba(255,255,255,.07); stroke-width: 1; }
+  .key { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 4px 0; }
+  .key i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 5px; border-radius: 2px; }
+  #tip { position: fixed; z-index: 3000; pointer-events: none; background: #0c0e10; border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-size: 12px; line-height: 1.35; display: none; max-width: 260px; font-variant-numeric: tabular-nums; }
+  #status { position: absolute; z-index: 900; left: 50%; bottom: 16px; transform: translateX(-50%); background: rgba(16,18,20,.92); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; color: var(--muted); font-size: 12.5px; display: none; }
+  .modal { position: fixed; inset: 0; z-index: 4000; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; }
+  .modal.open { display: flex; }
+  .modal .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; width: min(760px, 94vw); max-height: 88vh; display: flex; flex-direction: column; }
+  .modal .helpbody { padding: 6px 20px 8px; overflow-y: auto; line-height: 1.5; }
+  .modal .foot { padding: 10px 16px 14px; display: flex; justify-content: flex-end; }
+  #toast { position: fixed; z-index: 5000; left: 50%; top: 60px; transform: translateX(-50%); background: #2a2114; border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; padding: 7px 14px; display: none; }
+  #fatal { position: absolute; inset: 0; z-index: 2000; display: none; align-items: center; justify-content: center; text-align: center; padding: 40px; color: var(--muted); line-height: 1.6; }
+  @media (max-width: 820px) {
+    #app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 55% 1fr; }
+    header { grid-column: 1; padding: 8px 16px; gap: 8px; }
+    nav { max-width: 100%; overflow-x: auto; }
+    nav button { padding: 6px 9px; }
+    nav button kbd { display: none; }
+    .hctl { width: 100%; } .hctl select { flex: 1; min-width: 0; }
+    aside { order: 3; border-right: 0; border-top: 1px solid var(--line); padding: 12px 16px 40px; }
+    .pane .ptitle { padding: 3px 6px; } .pane .ptitle b { font-size: 12px; } .pane .ptitle .sub { display: none; }
+    .leaflet-control-attribution { display: none; }
+    .row input[type=range] { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Pasadena in embedding space</h1>
+    <nav id="tabs">
+      <button data-v="models">Visualizing embedding inputs<kbd>1</kbd></button>
+      <button data-v="explore">Explore<kbd>2</kbd></button>
+      <button data-v="change">Change<kbd>3</kbd></button>
+      <button data-v="probes">Linear probes<kbd>4</kbd></button>
+    </nav>
+    <div class="hspace"></div>
+    <div class="hctl">
+      <select id="site" title="Jump to a place"></select>
+      <select id="basemap" title="Background under the embedding layer">
+        <option value="imagery">Esri imagery</option>
+        <option value="dark">Dark</option>
+        <option value="none">No background</option>
+      </select>
+      <button class="btn" id="linkbtn" title="Copy a link to this exact view">Copy link</button>
+      <button class="btn" id="helpbtn">?</button>
+    </div>
+  </header>
+  <aside id="side"></aside>
+  <main id="stage"><div class="grid" id="grid"></div><div id="status"></div><div id="fatal"></div></main>
+</div>
+<div id="tip"></div>
+<div id="toast"></div>
+<div class="modal" id="help"><div class="box">
+  <div class="helpbody">
+    <h3>About</h3>
+    <p>A satellite foundation model maps satellite observations of a location to a vector, an <b>embedding</b>. The
+    models are pretrained without labels; locations with similar embeddings are similar with respect to the features
+    learned in pretraining.</p>
+    <p><b>Visualizing embedding inputs</b>: the data each model receives and its pretraining task.
+    <b>Explore</b>: principal components, cosine similarity, k-means clusters, and individual dimensions.
+    <b>Change</b>: cosine distance between embeddings of the same location in two years.
+    <b>Linear probes</b>: out-of-sample linear prediction of physical and census variables from the embeddings.</p>
+    <p>All layers except the background imagery are precomputed. Keys <kbd>1</kbd>–<kbd>4</kbd> select views;
+    <kbd>Esc</kbd> clears the similarity query.</p>
+    <h3>Credits</h3>
+    <p class="note" style="font-size:12.5px;line-height:1.5">
+    <b>AlphaEarth Foundations</b>: The AlphaEarth Foundations Satellite Embedding dataset is produced by Google and Google
+    DeepMind (CC-BY 4.0). <b>Prithvi-EO-2.0</b> © IBM and NASA (Apache-2.0). <b>Clay v1.5</b> © Clay Foundation
+    (Apache-2.0). <b>SatMAE</b> © Cong et al. 2022 (weights CC-BY 4.0 via Zenodo 7338613 and the MVRL Hugging Face
+    mirror; code CC BY-NC 4.0). Sentinel-2 and Sentinel-1: contains modified Copernicus Sentinel data. HLS: NASA LP
+    DAAC. Landsat: USGS. Elevation: USGS 3DEP. Land cover and tree canopy: NLCD 2021 (USGS, USFS). Buildings: Microsoft
+    US Building Footprints (ODbL). Canopy height: Meta and WRI. Census: ACS 2019–23 via the US Census Bureau. Fire
+    perimeter: CAL FIRE. City boundaries: TIGER/Line 2023. Background: Esri World Imagery. Map: Leaflet. Composites:
+    Google Earth Engine. Model inference: PyTorch.</p>
+  </div>
+  <div class="foot"><button class="btn" onclick="document.getElementById('help').classList.remove('open')">Close</button></div>
+</div></div>
+
+<script>
+"use strict";
+// ---------------------------------------------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------------------------------------------
+const SITES = [
+  { id: "overview", name: "Study area", ll: null, note: "Pasadena, Altadena, and the Eaton Fire perimeter." },
+  { id: "rosebowl", name: "Rose Bowl & Brookside", ll: [34.1613, -118.1676], z: 16, note: "Stadium and two golf courses." },
+  { id: "oldpas", name: "Old Pasadena", ll: [34.1458, -118.1505], z: 16, note: "Historic commercial district." },
+  { id: "caltech", name: "Caltech", ll: [34.1377, -118.1253], z: 16, note: "University campus." },
+  { id: "jpl", name: "JPL & Hahamongna", ll: [34.2005, -118.1720], z: 15, note: "NASA JPL campus and the Hahamongna basin." },
+  { id: "altadena", name: "West Altadena", ll: [34.1890, -118.1580], z: 16, note: "Area of heaviest structure loss in the January 2025 Eaton Fire." },
+  { id: "eaton", name: "Eaton Canyon", ll: [34.1800, -118.0970], z: 15, note: "Ignition area of the Eaton Fire, January 7, 2025." },
+  { id: "freeway", name: "I-210 / SR-134 interchange", ll: [34.1470, -118.1610], z: 16, note: "Freeway interchange." },
+];
+const BASEMAPS = {
+  imagery: { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+             attr: "Imagery © Esri, Maxar, Earthstar Geographics" },
+  dark: { url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+          attr: "Basemap © Esri" },
+  none: null,
+};
+const DETAIL_ZOOM = 15;          // load full-resolution vector tiles at this zoom and closer
+const MAX_DETAIL_TILES = 16;
+const RAMP_HOT = [[0, [72, 18, 110]], [0.35, [180, 54, 92]], [0.65, [246, 125, 30]], [1, [252, 250, 164]]];
+const RAMP_DIV = [[0, [59, 111, 212]], [0.5, [34, 36, 40]], [1, [235, 120, 50]]];
+const RAMP_SEQ = [[0, [68, 1, 84]], [0.25, [59, 82, 139]], [0.5, [33, 145, 140]], [0.75, [94, 201, 98]], [1, [253, 231, 37]]];
+const BASELINES = { raw: "Raw Sentinel-2 bands", xy: "Location (x, y)", sar: "Spatial AR(1)" };
+const BASE_SHORT = { raw: "Raw S2", xy: "Loc&shy;ation", sar: "AR(1)" };
+// clusters are numbered least green → greenest; greys/warm for built-up, greens for vegetated, distinct hues between
+const CLUSTER_PAL = ["#e8e3d8", "#b9a6c9", "#e07a5f", "#f2cc8f", "#8d99ae", "#c97b84", "#6cc4ff", "#3d9970",
+  "#a3c76b", "#2a9d8f", "#5c8a3a", "#1b5e20"];
+function clusterColors(k) {   // spread the 12-color ramp over k clusters
+  return Array.from({ length: k }, (_, i) => CLUSTER_PAL[Math.round(i * (CLUSTER_PAL.length - 1) / Math.max(1, k - 1))]);
+}
+let CLUSTERS = null;
+const LEVELS = ["Spectral", "Terrain", "Land cover", "Structure", "People"];
+
+// ---------------------------------------------------------------------------------------------------------------
+// State, URL hash
+// ---------------------------------------------------------------------------------------------------------------
+const S = {
+  view: "models", center: null, zoom: null, inYear: 2024, inOpt: {}, rsite: "rosebowl",
+  year: 2024, fit: "city", layer: "pca", dim: 0, opacity: 0.85, k: 8,
+  query: null, searchYear: 2024, top: 5,
+  pair: "2024_2025", noise: "2023_2024", thr: 0.1,
+  target: "elevation", pscale: "coarse", actual: false,
+  basemap: "imagery",
+};
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const num = k => h.has(k) ? +h.get(k) : undefined;
+  if (h.has("v")) S.view = h.get("v");
+  if (h.has("ll")) { const [a, b] = h.get("ll").split(",").map(Number); S.center = [a, b]; }
+  if (h.has("z")) S.zoom = num("z");
+  for (const k of ["year", "dim", "top", "thr", "opacity", "searchYear", "k"]) if (h.has(k)) S[k] = num(k);
+  for (const k of ["fit", "layer", "pair", "noise", "basemap", "target", "pscale", "rsite"]) if (h.has(k)) S[k] = h.get(k);
+  if (h.has("inYear")) S.inYear = +h.get("inYear");
+  if (h.has("inOpt")) for (const kv of h.get("inOpt").split(",")) { const [a, b] = kv.split(":"); if (a && b) S.inOpt[a] = b; }
+  if (h.has("actual")) S.actual = h.get("actual") === "1";
+  if (h.has("q")) { const [a, b] = h.get("q").split(",").map(Number); S.query = L.latLng(a, b); }
+}
+function writeHash() {
+  const m = PANES[0] && PANES[0].map;
+  const h = new URLSearchParams();
+  h.set("v", S.view);
+  if (m) { const c = m.getCenter(); h.set("ll", c.lat.toFixed(5) + "," + c.lng.toFixed(5)); h.set("z", m.getZoom()); }
+  for (const k of ["year", "fit", "layer", "dim", "k", "top", "searchYear", "pair", "noise", "thr", "opacity", "basemap", "target", "pscale"]) h.set(k, S[k]);
+  h.set("actual", S.actual ? 1 : 0);
+  h.set("inYear", S.inYear); h.set("rsite", S.rsite);
+  h.set("inOpt", Object.entries(S.inOpt).map(([a, b]) => a + ":" + b).join(","));
+  if (S.query) h.set("q", S.query.lat.toFixed(5) + "," + S.query.lng.toFixed(5));
+  history.replaceState(null, "", "#" + h.toString());
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Data loading
+// ---------------------------------------------------------------------------------------------------------------
+let MAN, G, BASE, EATON;           // manifest, grid, base mask {m,h,w}, Eaton mask (base grid)
+const MODELS = {};                  // id -> model state
+
+async function fetchI8(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ": HTTP " + r.status);
+  let buf = new Uint8Array(await r.arrayBuffer());
+  if (buf[0] === 0x1f && buf[1] === 0x8b) {   // gzip, unless the server already decoded it
+    const s = new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"));
+    buf = new Uint8Array(await new Response(s).arrayBuffer());
+  }
+  return new Int8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+}
+async function fetchGray(url) {     // PNG used as a data container: exact byte values of the first channel
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ": HTTP " + r.status);
+  const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+  const c = document.createElement("canvas");
+  c.width = bmp.width; c.height = bmp.height;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0);
+  const px = ctx.getImageData(0, 0, c.width, c.height).data;
+  const out = new Uint8Array(c.width * c.height);
+  for (let i = 0; i < out.length; i++) out[i] = px[i * 4];
+  return { v: out, w: c.width, h: c.height };
+}
+function poolAny(m, h, w, f) {      // same rule as common.py level_mask: a cell is inside if any pixel is
+  const h2 = Math.ceil(h / f), w2 = Math.ceil(w / f), out = new Uint8Array(h2 * w2);
+  for (let r = 0; r < h; r++) for (let c = 0; c < w; c++) if (m[r * w + c]) out[((r / f) | 0) * w2 + ((c / f) | 0)] = 1;
+  return { m: out, h: h2, w: w2 };
+}
+function makeIdx(m) {
+  const idx = new Int32Array(m.length).fill(-1);
+  let k = 0;
+  for (let i = 0; i < m.length; i++) if (m[i]) idx[i] = k++;
+  return { idx, n: k };
+}
+function poolCenter(m, h, w, f) {   // level cell takes the value of its center base pixel
+  const h2 = Math.ceil(h / f), w2 = Math.ceil(w / f), out = new Uint8Array(h2 * w2), o = (f / 2) | 0;
+  for (let r = 0; r < h2; r++) for (let c = 0; c < w2; c++) {
+    const rr = Math.min(h - 1, r * f + o), cc = Math.min(w - 1, c * f + o);
+    out[r * w2 + c] = m[rr * w + cc];
+  }
+  return out;
+}
+
+function initModel(meta) {
+  const s = meta.scale, lv = s === 1 ? { m: BASE.m, h: BASE.h, w: BASE.w } : poolAny(BASE.m, BASE.h, BASE.w, s);
+  if (lv.h !== meta.shape[0] || lv.w !== meta.shape[1]) throw new Error(`${meta.id}: grid ${lv.h}×${lv.w} ≠ ${meta.shape}`);
+  const M = { meta, id: meta.id, s, h: lv.h, w: lv.w, mask: lv.m, D: meta.dims, data: {}, chg: {} };
+  Object.assign(M, makeIdx(M.mask));
+  M.eaton = poolCenter(EATON.v, BASE.h, BASE.w, s);
+  const anyYear = Object.values(meta.years).find(y => y.vec_ov || y.vec_tiles);
+  if (anyYear) {
+    M.ov = poolAny(M.mask, M.h, M.w, 2);
+    Object.assign(M.ov, makeIdx(M.ov.m));
+    M.T = anyYear.vec_tiles.tile;
+  }
+  return M;
+}
+function hasVectors(M, y) { const e = M.meta.years[y]; return !!(e && (e.vec || e.vec_ov)); }
+function vecYears(M) { return Object.keys(M.meta.years).filter(y => hasVectors(M, y)).map(Number); }
+
+async function ensureYear(M, y) {   // the whole-area vectors: vec (small models) or the 2× overview (big ones)
+  M.data[y] = M.data[y] || { tiles: {}, tileIdx: {} };
+  const d = M.data[y], e = M.meta.years[y];
+  if (!e) return null;
+  if (d.main) return d;
+  if (!d.loading) d.loading = (async () => {
+    const f = e.vec || e.vec_ov;
+    const arr = await fetchI8("data/" + f.file);
+    const n = e.vec ? M.n : M.ov.n;
+    if (arr.length !== n * M.D) throw new Error(`${f.file}: ${arr.length} bytes, expected ${n}×${M.D}`);
+    d.main = arr;
+    return d;
+  })();
+  return d.loading;
+}
+function tileKeyAt(M, r, c) { return ((r / M.T) | 0) + "_" + ((c / M.T) | 0); }
+async function ensureTile(M, y, key) {
+  const d = M.data[y], e = M.meta.years[y];
+  if (!e || !e.vec_tiles || !(key in e.vec_tiles.n)) return null;
+  if (d.tiles[key]) return d.tiles[key];
+  d.tilesLoading = d.tilesLoading || {};
+  if (!d.tilesLoading[key]) d.tilesLoading[key] = (async () => {
+    const arr = await fetchI8(`data/${e.vec_tiles.dir}/${key}.bin.gz`);
+    const [tr, tc] = key.split("_").map(Number), T = M.T;
+    const r0 = tr * T, c0 = tc * T, r1 = Math.min(M.h, r0 + T), c1 = Math.min(M.w, c0 + T);
+    const idx = new Int32Array((r1 - r0) * (c1 - c0)).fill(-1);
+    let k = 0;
+    for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) if (M.mask[r * M.w + c]) idx[(r - r0) * (c1 - c0) + (c - c0)] = k++;
+    if (k !== e.vec_tiles.n[key] || arr.length !== k * M.D) throw new Error(`tile ${key}: ${k} cells, ${arr.length} bytes`);
+    d.tiles[key] = { arr, idx, r0, c0, r1, c1 };
+    return d.tiles[key];
+  })();
+  return d.tilesLoading[key];
+}
+// Vector at a level cell, as a unit Float32Array; full resolution if a tile holds it, else the overview cell.
+async function vectorAt(M, y, r, c, needExact) {
+  await ensureYear(M, y);
+  const d = M.data[y], D = M.D;
+  if (M.ov) {
+    const key = tileKeyAt(M, r, c);
+    let t = d.tiles[key];
+    if (!t && needExact) t = await ensureTile(M, y, key);
+    if (t) {
+      const k = t.idx[(r - t.r0) * (t.c1 - t.c0) + (c - t.c0)];
+      if (k >= 0) return unit(t.arr, k * D, D);
+    }
+    const k = M.ov.idx[((r / 2) | 0) * M.ov.w + ((c / 2) | 0)];
+    return k >= 0 ? unit(d.main, k * D, D) : null;
+  }
+  const k = M.idx[r * M.w + c];
+  return k >= 0 ? unit(d.main, k * D, D) : null;
+}
+function unit(arr, off, D) {
+  const q = new Float32Array(D);
+  let n = 0;
+  for (let i = 0; i < D; i++) { q[i] = arr[off + i]; n += q[i] * q[i]; }
+  n = Math.sqrt(n) || 1;
+  for (let i = 0; i < D; i++) q[i] /= n;
+  return q;
+}
+function dots(arr, n, D, q) {       // rows were unit vectors × VEC_SCALE before rounding
+  const out = new Float32Array(n), sc = 1 / MAN.vec_scale;
+  for (let k = 0, o = 0; k < n; k++, o += D) {
+    let s = 0;
+    for (let i = 0; i < D; i++) s += arr[o + i] * q[i];
+    out[k] = s * sc;
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Geometry: level grids are Web Mercator, so Leaflet drapes them with no reprojection
+// ---------------------------------------------------------------------------------------------------------------
+const PROJ = L.Projection.SphericalMercator;
+function levelBounds(cellM, r0, c0, r1, c1) {     // cellM = cell size in Mercator metres
+  const x0 = G.x0 + c0 * cellM, x1 = G.x0 + c1 * cellM, y1 = G.y1 - r0 * cellM, y0 = G.y1 - r1 * cellM;
+  return L.latLngBounds(PROJ.unproject(L.point(x0, y0)), PROJ.unproject(L.point(x1, y1)));
+}
+function cellOf(M, ll, f = 1) {                    // f = 2 for the overview grid
+  const p = PROJ.project(ll), cell = G.res * M.s * f;
+  return { r: Math.floor((G.y1 - p.y) / cell), c: Math.floor((p.x - G.x0) / cell) };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Canvas overlay: an ImageOverlay whose "image" is a canvas we redraw in place
+// ---------------------------------------------------------------------------------------------------------------
+const CanvasOverlay = L.ImageOverlay.extend({
+  _initImage() {
+    const el = this._image = this._url;
+    L.DomUtil.addClass(el, "leaflet-image-layer");
+    if (this._zoomAnimated) L.DomUtil.addClass(el, "leaflet-zoom-animated");
+    if (this.options.className) L.DomUtil.addClass(el, this.options.className);
+    el.onselectstart = L.Util.falseFn;
+    el.onmousemove = L.Util.falseFn;
+    if (this.options.zIndex != null) this._updateZIndex();
+  },
+});
+function canvasFor(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+function rampColor(stops, t) {
+  t = Math.max(0, Math.min(1, t));
+  for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) {
+    const [t0, a] = stops[i - 1], [t1, b] = stops[i], u = (t - t0) / (t1 - t0);
+    return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
+  }
+  return stops[stops.length - 1][1];
+}
+const LUT = {};
+function lut(name, stops) {
+  if (!LUT[name]) { LUT[name] = new Uint8Array(256 * 3); for (let i = 0; i < 256; i++) LUT[name].set(rampColor(stops, i / 255).map(Math.round), i * 3); }
+  return LUT[name];
+}
+function rampCss(stops) { return "linear-gradient(90deg," + stops.map(([t, c]) => `rgb(${c.join(",")}) ${t * 100}%`).join(",") + ")"; }
+
+// Paint per-cell values into a canvas. val(k) for inside cell k → [r,g,b,a] written by paint(k, px, o).
+function paintGrid(canvas, w, h, mask, idx, paint) {
+  const ctx = canvas.getContext("2d"), img = ctx.createImageData(w, h), px = img.data;
+  for (let i = 0; i < w * h; i++) { const k = idx[i]; if (k >= 0 && (!mask || mask[i])) paint(k, px, i * 4); }
+  ctx.putImageData(img, 0, 0);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Panes: one synced Leaflet map per model
+// ---------------------------------------------------------------------------------------------------------------
+let PANES = [], syncing = false;
+function buildPanes() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  PANES.forEach(p => p.map.remove());
+  const ids = MAN.models.map(m => m.id);
+  const n = ids.length, cols = n <= 1 ? 1 : n <= 4 ? 2 : 3;
+  grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+  grid.style.gridTemplateRows = `repeat(${Math.ceil(n / cols)}, minmax(0, 1fr))`;
+  PANES = ids.map(id => {
+    const el = document.createElement("div");
+    el.className = "pane";
+    el.innerHTML = `<div class="map"></div><div class="phead"><div class="ptitle"><b></b><div class="sub"></div></div><div class="spin"></div></div>`;
+    grid.appendChild(el);
+    const map = L.map(el.querySelector(".map"), { zoomControl: false, attributionControl: true, minZoom: 11, maxZoom: 19, zoomSnap: 0.5 });
+    map.attributionControl.setPrefix(false);
+    L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
+    const P = { id, M: MODELS[id], el, map, layers: {}, detail: {} };
+    map.createPane("emb").style.zIndex = 350;
+    map.createPane("lines").style.zIndex = 450;
+    P.aoi = L.geoJSON(AOI_GJ, { pane: "lines", interactive: false, style: { color: "#fff", weight: 1, opacity: .35, fill: false } }).addTo(map);
+    P.eatonLine = L.geoJSON(EATON_GJ, { pane: "lines", interactive: false, style: { color: "#ffb347", weight: 1.5, opacity: .9, dashArray: "4 3", fill: false } });
+    map.on("move", () => syncFrom(P));
+    map.on("moveend", () => { writeHash(); refreshDetail(P); });
+    map.on("click", e => onClick(P, e.latlng));
+    map.on("mousemove", e => onHover(P, e));
+    map.on("mouseout", () => tip(null));
+    return P;
+  });
+  for (const P of PANES) if (P.M.meta.attribution) P.map.attributionControl.addAttribution(P.M.meta.attribution);
+  const b = levelBounds(G.res, 0, 0, BASE.h, BASE.w);
+  for (const P of PANES) {
+    if (S.center && S.zoom) P.map.setView(S.center, S.zoom, { animate: false });
+    else P.map.fitBounds(b, { animate: false });
+  }
+  setBasemap();
+}
+function syncFrom(P) {
+  if (syncing) return;
+  syncing = true;
+  const c = P.map.getCenter(), z = P.map.getZoom();
+  for (const Q of PANES) if (Q !== P) Q.map.setView(c, z, { animate: false });
+  syncing = false;
+}
+function setBasemap() {
+  for (const P of PANES) {
+    if (P.base) { P.map.removeLayer(P.base); P.base = null; }
+    const b = BASEMAPS[S.basemap];
+    if (b) P.base = L.tileLayer(b.url, { maxZoom: 19, maxNativeZoom: 19, attribution: b.attr }).addTo(P.map);
+  }
+}
+function setTitle(P, sub) {
+  P.el.querySelector(".ptitle b").textContent = P.M.meta.name;
+  P.el.querySelector(".ptitle .sub").innerHTML = sub;
+}
+function busy(P, on) { P.el.classList.toggle("loading", !!on); }
+function clearLayers(P) {
+  if (P.chip) { P.map.removeLayer(P.chip); P.chip = null; }
+  for (const k in P.layers) { P.map.removeLayer(P.layers[k]); }
+  P.layers = {};
+  clearDetail(P);
+}
+function clearDetail(P) { for (const k in P.detail) P.map.removeLayer(P.detail[k]); P.detail = {}; }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Explore view
+// ---------------------------------------------------------------------------------------------------------------
+const SIM = {};                     // id -> {main: Float32Array, thr, max, year} for the current query
+async function drawExplore() {
+  for (const P of PANES) {
+    const M = P.M;
+    clearLayers(P);
+    if (P.query) { P.map.removeLayer(P.query); P.query = null; }
+    P.eatonLine.remove();
+    const yr = M.meta.years[S.year];
+    if (!yr) { setTitle(P, `No ${S.year} embeddings`); continue; }
+    if (S.layer === "pca" || (S.layer === "sim" && !S.query)) {
+      const url = "data/" + (yr.rgb[S.fit] || yr.rgb.all);
+      P.layers.rgb = L.imageOverlay(url, levelBounds(G.res * M.s, 0, 0, M.h, M.w),
+        { pane: "emb", opacity: S.opacity, className: "px" }).addTo(P.map);
+      const v = M.meta.pca_var[S.fit] || M.meta.pca_var.all;
+      setTitle(P, `${S.year} · principal components 1–3 (fit: ${S.fit === "city" ? "Pasadena + Altadena" : "full area"}) · ` +
+        `${Math.round(100 * v.reduce((a, b) => a + b, 0))}% of variance` + (S.layer === "sim" ? " · select a location" : ""));
+    }
+    if (S.layer === "sim" && S.query) await drawSim(P);
+    if (S.layer === "dim") await drawDim(P);
+    if (S.layer === "clusters") await drawClusters(P);
+  }
+  for (const P of PANES) refreshDetail(P);
+}
+
+async function drawSim(P) {
+  const M = P.M, yQ = S.year, yS = hasVectors(M, S.searchYear) ? S.searchYear : yQ;
+  if (!hasVectors(M, yQ)) { setTitle(P, `No ${yQ} embeddings`); return; }
+  busy(P, true);
+  try {
+    const { r, c } = cellOf(M, S.query);
+    const q = (r >= 0 && c >= 0 && r < M.h && c < M.w) ? await vectorAt(M, yQ, r, c, true) : null;
+    P.query = L.circleMarker(S.query, { pane: "lines", radius: 6, color: "#fff", weight: 2, fillColor: "#ffb347", fillOpacity: 1 }).addTo(P.map);
+    if (!q) { setTitle(P, "Query outside the study area"); return; }
+    const d = await ensureYear(M, yS);
+    const n = M.ov ? M.ov.n : M.n;
+    const sim = dots(d.main, n, M.D, q);
+    const sorted = Float32Array.from(sim).sort();
+    const thr = sorted[Math.max(0, Math.floor(n * (1 - S.top / 100)))], max = sorted[n - 1];
+    SIM[M.id] = { q, main: sim, thr, max, yS, sorted };
+    const g = M.ov || M, cv = canvasFor(g.w, g.h), L8 = lut("hot", RAMP_HOT);
+    paintGrid(cv, g.w, g.h, null, g.idx, (k, px, o) => simPaint(sim[k], thr, max, L8, px, o));
+    P.layers.sim = new CanvasOverlay(cv, levelBounds(G.res * M.s * (M.ov ? 2 : 1), 0, 0, g.h, g.w),
+      { pane: "emb", opacity: Math.max(S.opacity, .9), className: "px" }).addTo(P.map);
+    const res = Math.round(10 * M.s * (M.ov ? 2 : 1));
+    setTitle(P, `Cosine similarity to the ${yQ} query` + (yS !== yQ ? ` · ${yS} embeddings` : "") +
+      ` · top ${S.top}% highlighted · ${M.ov ? `${res} m; 10 m at zoom ${DETAIL_ZOOM}+` : `${res} m`}`);
+  } finally { busy(P, false); }
+}
+function simPaint(s, thr, max, L8, px, o) {
+  if (s >= thr) {
+    const j = Math.round(255 * (s - thr) / Math.max(1e-6, max - thr)) * 3;
+    px[o] = L8[j]; px[o + 1] = L8[j + 1]; px[o + 2] = L8[j + 2]; px[o + 3] = 240;
+  } else { px[o + 3] = 150; }   // below threshold: dim the background
+}
+
+async function drawClusters(P) {
+  const M = P.M;
+  if (!MAN.clusters) return;
+  if (!CLUSTERS) CLUSTERS = await (await fetch("data/" + MAN.clusters)).json();
+  const e = CLUSTERS.models[M.id] && CLUSTERS.models[M.id][S.k];
+  if (!e) { setTitle(P, "No clusters"); return; }
+  busy(P, true);
+  try {
+    const g = await probePng(e.file), cols = clusterColors(+S.k).map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+    const cv = canvasFor(g.w, g.h), ctx = cv.getContext("2d"), img = ctx.createImageData(g.w, g.h), px = img.data;
+    for (let i = 0; i < g.v.length; i++) {
+      const u = g.v[i];
+      if (!u) continue;
+      const c = cols[u - 1], o = i * 4;
+      px[o] = c[0]; px[o + 1] = c[1]; px[o + 2] = c[2]; px[o + 3] = 235;
+    }
+    ctx.putImageData(img, 0, 0);
+    P.layers.clusters = new CanvasOverlay(cv, levelBounds(G.res * M.s, 0, 0, g.h, g.w), { pane: "emb", opacity: Math.max(S.opacity, .9), className: "px" }).addTo(P.map);
+    P.clusterGrid = { g, e };
+    setTitle(P, `2024 · k-means, k = ${S.k}`);
+  } finally { busy(P, false); }
+}
+
+async function drawDim(P) {
+  const M = P.M;
+  if (!hasVectors(M, S.year)) { setTitle(P, `No ${S.year} embeddings`); return; }
+  busy(P, true);
+  try {
+    const d = await ensureYear(M, S.year), g = M.ov || M, D = M.D, dim = Math.min(S.dim, D - 1);
+    const n = M.ov ? M.ov.n : M.n, vals = new Float32Array(n);
+    for (let k = 0; k < n; k++) vals[k] = d.main[k * D + dim];
+    const a = Float32Array.from(vals).map(Math.abs).sort(), sc = a[Math.floor(a.length * .98)] || 1;
+    P.dimScale = sc;
+    const cv = canvasFor(g.w, g.h), LD = lut("div", RAMP_DIV);
+    paintGrid(cv, g.w, g.h, null, g.idx, (k, px, o) => {
+      const j = Math.round(255 * (0.5 + 0.5 * Math.max(-1, Math.min(1, vals[k] / sc)))) * 3;
+      px[o] = LD[j]; px[o + 1] = LD[j + 1]; px[o + 2] = LD[j + 2]; px[o + 3] = 235;
+    });
+    P.layers.dim = new CanvasOverlay(cv, levelBounds(G.res * M.s * (M.ov ? 2 : 1), 0, 0, g.h, g.w),
+      { pane: "emb", opacity: Math.max(S.opacity, .9), className: "px" }).addTo(P.map);
+    setTitle(P, `${S.year} · dimension ${dim + 1} of ${D}` + (M.meta.id === "aef" ? "" : " (principal component)"));
+  } finally { busy(P, false); }
+}
+
+// Full-resolution tiles for big models once zoomed in (similarity and one-dimension layers)
+async function refreshDetail(P) {
+  const M = P.M;
+  if (S.view !== "explore" || !M.ov || !(S.layer === "dim" || (S.layer === "sim" && S.query))) { clearDetail(P); return; }
+  if (P.map.getZoom() < DETAIL_ZOOM) { clearDetail(P); return; }
+  const year = S.layer === "sim" ? (hasVectors(M, S.searchYear) ? S.searchYear : S.year) : S.year;
+  const e = M.meta.years[year];
+  if (!e || !e.vec_tiles) return;
+  const b = P.map.getBounds(), a = cellOf(M, b.getNorthWest()), z = cellOf(M, b.getSouthEast());
+  const keys = [];
+  for (let tr = Math.max(0, (a.r / M.T) | 0); tr <= Math.min((M.h - 1) / M.T | 0, (z.r / M.T) | 0); tr++)
+    for (let tc = Math.max(0, (a.c / M.T) | 0); tc <= Math.min((M.w - 1) / M.T | 0, (z.c / M.T) | 0); tc++)
+      if ((tr + "_" + tc) in e.vec_tiles.n) keys.push(tr + "_" + tc);
+  if (keys.length > MAX_DETAIL_TILES) return;
+  const tag = `${S.layer}|${year}|${S.dim}|${S.top}|${S.query ? S.query.toString() : ""}|${S.year}`;
+  for (const k in P.detail) if (P.detail[k]._tag !== tag || !keys.includes(k)) { P.map.removeLayer(P.detail[k]); delete P.detail[k]; }
+  busy(P, true);
+  try {
+    await ensureYear(M, year);
+    for (const key of keys) {
+      if (P.detail[key]) continue;
+      const t = await ensureTile(M, year, key);
+      if (!t || S.view !== "explore") continue;
+      const w = t.c1 - t.c0, h = t.r1 - t.r0, n = t.arr.length / M.D, cv = canvasFor(w, h);
+      if (S.layer === "sim") {
+        const st = SIM[M.id];
+        if (!st) continue;
+        const sim = dots(t.arr, n, M.D, st.q), L8 = lut("hot", RAMP_HOT);
+        paintGrid(cv, w, h, null, t.idx, (k, px, o) => simPaint(sim[k], st.thr, st.max, L8, px, o));
+        t.sim = sim; t.simTag = tag;
+      } else {
+        const LD = lut("div", RAMP_DIV), D = M.D, dim = Math.min(S.dim, D - 1), sc = P.dimScale || 1;
+        paintGrid(cv, w, h, null, t.idx, (k, px, o) => {
+          const j = Math.round(255 * (0.5 + 0.5 * Math.max(-1, Math.min(1, t.arr[k * D + dim] / sc)))) * 3;
+          px[o] = LD[j]; px[o + 1] = LD[j + 1]; px[o + 2] = LD[j + 2]; px[o + 3] = 235;
+        });
+      }
+      const ov = new CanvasOverlay(cv, levelBounds(G.res * M.s, t.r0, t.c0, t.r1, t.c1),
+        { pane: "emb", opacity: Math.max(S.opacity, .9), className: "px", zIndex: 5 });
+      ov._tag = tag;
+      P.detail[key] = ov.addTo(P.map);
+    }
+  } catch (err) { console.error(err); status("Could not load detail tiles: " + err.message, 4000); }
+  finally { busy(P, false); }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Change view
+// ---------------------------------------------------------------------------------------------------------------
+async function loadChange(M, pair) {
+  if (M.chg[pair]) return M.chg[pair];
+  const e = M.meta.change[pair];
+  if (!e) return null;
+  const g = await fetchGray("data/" + e.file);
+  if (g.w !== M.w || g.h !== M.h) throw new Error(`${e.file}: ${g.w}×${g.h}`);
+  M.chg[pair] = g.v;   // 0 outside, else 1 + round(√(d/2)·254)
+  return g.v;
+}
+const dOf = u => 2 * ((u - 1) / 254) ** 2;
+async function drawChange() {
+  for (const P of PANES) {
+    const M = P.M;
+    clearLayers(P);
+    if (P.query) { P.map.removeLayer(P.query); P.query = null; }
+    P.eatonLine.addTo(P.map);
+    if (!M.meta.change[S.pair]) { setTitle(P, `No ${S.pair.replace("_", "–")} change map`); continue; }
+    busy(P, true);
+    try {
+      const u = await loadChange(M, S.pair), cv = canvasFor(M.w, M.h), L8 = lut("hot", RAMP_HOT);
+      const ctx = cv.getContext("2d"), img = ctx.createImageData(M.w, M.h), px = img.data, top = Math.max(1, S.thr + .2);
+      for (let i = 0; i < u.length; i++) {
+        if (!u[i]) continue;
+        const d = dOf(u[i]), o = i * 4;
+        if (d >= S.thr) {
+          const j = Math.round(255 * Math.min(1, (d - S.thr) / (top - S.thr))) * 3;
+          px[o] = L8[j]; px[o + 1] = L8[j + 1]; px[o + 2] = L8[j + 2]; px[o + 3] = 235;
+        } else px[o + 3] = 110;
+      }
+      ctx.putImageData(img, 0, 0);
+      P.layers.chg = new CanvasOverlay(cv, levelBounds(G.res * M.s, 0, 0, M.h, M.w),
+        { pane: "emb", opacity: Math.max(S.opacity, .9), className: "px" }).addTo(P.map);
+      const [a, b] = S.pair.split("_");
+      setTitle(P, `${a}–${b} · cosine distance ≥ ${S.thr.toFixed(2)} · dashed line: Eaton Fire perimeter`);
+    } finally { busy(P, false); }
+  }
+  renderChangeStats();
+}
+async function changeStats(M, pair, thr, thr2) {
+  const u = await loadChange(M, pair);
+  if (!u) return null;
+  let ni = 0, no = 0, ai = 0, ao = 0, bi = 0, bo = 0;
+  const hin = new Float64Array(61), hout = new Float64Array(61);
+  for (let i = 0; i < u.length; i++) {
+    if (!u[i]) continue;
+    const d = dOf(u[i]), b = Math.min(60, Math.floor(d * 50));
+    if (M.eaton[i]) { ni++; if (d >= thr) ai++; if (d >= thr2) bi++; hin[b]++; }
+    else { no++; if (d >= thr) ao++; if (d >= thr2) bo++; hout[b]++; }
+  }
+  return { inShare: ai / ni, outShare: ao / no, inRel: bi / ni, outRel: bo / no, hin: hin.map(v => v / ni), hout: hout.map(v => v / no) };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Where they come from
+// ---------------------------------------------------------------------------------------------------------------
+const ORIGINS = {
+  satmae: {
+    dev: "Stanford University (Cong et al.)", when: "NeurIPS 2022",
+    data: "fMoW-Sentinel: 712,874 Sentinel-2 images (13 bands) at Functional Map of the World sites, 62 land-use categories",
+    task: "Masked autoencoding: 75% of patches are masked and reconstructed. Bands form three spectral groups, masked independently.",
+    input: "10 Sentinel-2 bands, one image, 96 × 96 pixels (0.96 km)",
+    license: "Code CC BY-NC 4.0; weights CC BY 4.0",
+  },
+  prithvi: {
+    dev: "NASA IMPACT and IBM Research", when: "v1.0 2023; v2.0 December 2024",
+    data: "4.2 million global time series of Harmonized Landsat Sentinel-2 (HLS; 30 m, 6 bands)",
+    task: "Masked autoencoding in space and time: 75% of spatiotemporal patches are masked and reconstructed. The TL variant also encodes acquisition date and latitude/longitude.",
+    input: "6 HLS bands × 4 dates, 224 × 224 pixels (6.7 km)",
+    license: "Code and weights Apache 2.0",
+  },
+  clay_s2: {
+    dev: "Clay Foundation", when: "v1.5, September 2024",
+    data: "About 70 million chips from Sentinel-2, Landsat 8/9, Sentinel-1, NAIP, LINZ aerial imagery, and MODIS, sampled by global land-cover statistics",
+    task: "Masked autoencoding, plus regression onto DINOv2 image features. Patch embeddings are generated from band wavelengths, so one model accepts any sensor.",
+    input: "10 Sentinel-2 bands with their wavelengths, 256 × 256 pixels (2.56 km)",
+    license: "Code and weights Apache 2.0",
+  },
+  aef: {
+    dev: "Google DeepMind and Google Earth Engine (Brown et al.)", when: "July 2025",
+    data: "More than 3 billion observations covering about 1.1% of Earth's land surface. Inputs: Sentinel-2, Landsat 8/9, Sentinel-1. Training targets only: ALOS PALSAR-2, Copernicus DEM, GEDI, ERA5-Land, GRACE, NLCD, Wikipedia and GBIF text",
+    task: "Summarizes one year of observations as a 64-dimensional unit vector per 10 m pixel, trained to reconstruct all sources, to distribute uniformly on the sphere, and to align with text",
+    input: "All Sentinel-2, Landsat 8/9, and Sentinel-1 observations in the calendar year",
+    license: "Weights not released; embeddings CC BY 4.0 (Earth Engine, 2017–2025)",
+  },
+};
+let INPUTS = null, RECON = null;
+async function loadModelsData() {
+  if (!INPUTS && MAN.inputs) INPUTS = await (await fetch("data/" + MAN.inputs)).json();
+  if (!RECON && MAN.recon) RECON = await (await fetch("data/" + MAN.recon)).json();
+}
+function inputOpt(id) {
+  const opts = (INPUTS || {})[id] || [];
+  return opts.find(o => o.key === S.inOpt[id]) || opts[0];
+}
+async function drawModels() {
+  await loadModelsData();
+  for (const P of PANES) {
+    const M = P.M;
+    clearLayers(P);
+    if (P.query) { P.map.removeLayer(P.query); P.query = null; }
+    if (P.chip) { P.map.removeLayer(P.chip); P.chip = null; }
+    P.eatonLine.remove();
+    const o = inputOpt(M.id), e = o && o.years[S.inYear];
+    if (!e) { setTitle(P, "No input image"); continue; }
+    P.layers.input = L.imageOverlay("data/" + e.file, levelBounds(G.res * e.scale, 0, 0, Math.ceil(BASE.h / e.scale), Math.ceil(BASE.w / e.scale)),
+      { pane: "emb", opacity: 1, className: e.scale > 1 ? "px" : "" }).addTo(P.map);
+    setTitle(P, `Input, ${S.inYear}: ${o.label}`);
+    const rs = RECON && RECON.sites.find(x => x.id === S.rsite), rm = RECON && RECON.models[M.id] && RECON.models[M.id][S.rsite];
+    if (rs && rm) {
+      const p = PROJ.project(L.latLng(rs.ll[0], rs.ll[1])), half = rm.chip_px / 2 * G.res * (M.id === "prithvi" ? 3 : 1);
+      P.chip = L.rectangle(L.latLngBounds(PROJ.unproject(L.point(p.x - half, p.y - half)), PROJ.unproject(L.point(p.x + half, p.y + half))),
+        { pane: "lines", color: "#ffb347", weight: 2, fill: false, interactive: false }).addTo(P.map);
+    }
+  }
+}
+function lineageSvg() {
+  const ev = [[2021.9, "MAE (He et al.)", "masked autoencoders for photos", "#a7aaad"], [2022.9, "SatMAE", "", "#d95926"],
+    [2023.6, "Prithvi 1.0", "", "#3987e5"], [2024.7, "Clay v1.5", "", "#199e70"], [2024.95, "Prithvi 2.0", "", "#3987e5"],
+    [2025.55, "AlphaEarth", "", "#ffb347"]];
+  const W = 330, x = t => 16 + (W - 32) * (t - 2021.5) / 4.3;
+  let g = `<line x1="12" x2="${W - 8}" y1="34" y2="34" stroke="rgba(255,255,255,.3)"/>`;
+  for (const y of [2022, 2023, 2024, 2025]) g += `<text x="${x(y)}" y="56" text-anchor="middle">${y}</text><line x1="${x(y)}" x2="${x(y)}" y1="30" y2="38" stroke="rgba(255,255,255,.3)"/>`;
+  ev.forEach(([t, n, , c], i) => {
+    const up = i % 2 === 0;
+    g += `<circle cx="${x(t)}" cy="34" r="4.5" fill="${c}"/><text x="${x(t)}" y="${up ? 20 : 74}" text-anchor="middle" style="fill:${c};font-size:11px;font-weight:600">${n}</text>`;
+  });
+  return `<svg class="chart" width="100%" viewBox="0 0 ${W} 82">${g}</svg>`;
+}
+function modelsSide() {
+  const ys = INPUTS ? [...new Set(Object.values(INPUTS).flatMap(os => os.flatMap(o => Object.keys(o.years))))].sort() : [];
+  const rs = RECON ? RECON.sites.find(x => x.id === S.rsite) : null;
+  let h = `
+    <h2>Visualizing embedding inputs</h2>
+    ${lineageSvg()}
+    <table class="stats cmp"><tr><th></th><th>Inputs</th><th>Embedding resolution</th><th>Time</th></tr>
+      <tr><td>SatMAE</td><td>Sentinel-2, 10 bands</td><td>80 m patch</td><td>One image</td></tr>
+      <tr><td>Prithvi</td><td>HLS, 6 bands</td><td>480 m patch</td><td>4 dates</td></tr>
+      <tr><td>Clay</td><td>Any sensor (here Sentinel-2)</td><td>80 m patch</td><td>One image</td></tr>
+      <tr><td>AlphaEarth</td><td>Sentinel-2, Landsat 8/9, Sentinel-1</td><td>10 m pixel</td><td>Calendar year</td></tr></table>
+    <div class="row"><label>Year</label>${seg("inYear", ys.map(y => [y, y]), S.inYear)}</div>`;
+  for (const m of MAN.models) {
+    const o = ORIGINS[m.id], opts = (INPUTS || {})[m.id] || [];
+    if (!o) continue;
+    h += `<div class="card"><h3>${m.name}</h3><table>
+      <tr><td>Developer</td><td>${o.dev}</td></tr>
+      <tr><td>Released</td><td>${o.when}</td></tr>
+      <tr><td>Training data</td><td>${o.data}</td></tr>
+      <tr><td>Pretraining</td><td>${o.task}</td></tr>
+      <tr><td>Input here</td><td>${o.input}</td></tr>
+      <tr><td>License</td><td>${o.license}</td></tr></table>
+      ${opts.length > 1 ? `<div class="row" style="margin-top:6px">${seg("inOpt:" + m.id, opts.map(x => [x.key, x.label.split(":")[0]]), inputOpt(m.id).key)}</div>` : ""}</div>`;
+  }
+  if (RECON) {
+    h += `<h2>Masked reconstruction</h2>
+      <p>SatMAE, Prithvi, and Clay are built to infer missing parts of input images. Below, you can see some examples.
+      An orange square is the actual model chip, to scale. AlphaEarth's chips are proprietary and not public.</p>
+      <div class="row">${seg("rsite", RECON.sites.map(x => [x.id, x.name]), S.rsite)}</div>`;
+    for (const mid of ["satmae", "prithvi", "clay_s2"]) {
+      const r = RECON.models[mid] && RECON.models[mid][S.rsite], m = MAN.models.find(x => x.id === mid);
+      if (!r || !m) continue;
+      h += `<div class="card"><b>${m.short}</b> <span class="note">Chip ${(r.chip_m / 1000).toFixed(2)} km · ${r.masked}</span>
+        <div class="recon">${r.files.map((f, i) => `<figure><img src="data/${f}" alt=""><figcaption>${["Input", "Visible patches", "Reconstruction"][i]}</figcaption></figure>`).join("")}</div>
+        <div class="note">Correlation between reconstruction and input over masked pixels, all bands: <b>${r.r.toFixed(2)}</b>${mid === "satmae" ? ". SatMAE masks each band group independently, so a masked location is often visible in another group" : ""}</div></div>`;
+    }
+    h += `<p class="note">Site: ${rs ? rs.name + ", " + rs.year : ""}. Pictures are truecolor composites.</p>`;
+  }
+  return h;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// What's inside: linear probes
+// ---------------------------------------------------------------------------------------------------------------
+let PROBES = null;
+const PROBE_PX = {};                // file -> {v, w, h}
+async function loadProbes() {
+  if (!PROBES) PROBES = await (await fetch("data/" + MAN.probes)).json();
+  if (!PROBES.targets.some(t => t.id === S.target)) S.target = PROBES.targets[0].id;
+  return PROBES;
+}
+async function probePng(file) { return PROBE_PX[file] || (PROBE_PX[file] = await fetchGray("data/" + file)); }
+const probeVal = (t, u) => t.lo + (u - 1) / 253 * (t.hi - t.lo);
+function fmtVal(t, x) {
+  if (t.unit === "log $") return "$" + Math.round(Math.exp(x)).toLocaleString();
+  if (t.unit === "log per km²") return Math.round(Math.exp(x)).toLocaleString() + " per km²";
+  const d = Math.abs(t.hi - t.lo) < 5 ? 2 : Math.abs(t.hi - t.lo) < 50 ? 1 : 0;
+  return x.toFixed(d) + (t.unit ? " " + t.unit : "");
+}
+async function drawProbes() {
+  if (!MAN.probes) return;
+  await loadProbes();
+  const t = PROBES.targets.find(x => x.id === S.target), mp = PROBES.maps[t.id];
+  for (const P of PANES) {
+    const M = P.M;
+    clearLayers(P);
+    if (P.query) { P.map.removeLayer(P.query); P.query = null; }
+    P.eatonLine.remove();
+    const file = S.actual ? mp.actual : mp.pred[M.id];
+    if (!file) { setTitle(P, "No prediction"); continue; }
+    busy(P, true);
+    try {
+      const g = await probePng(file), s = g.w === M.w && g.h === M.h ? M.s : 1;
+      const cv = canvasFor(g.w, g.h), ctx = cv.getContext("2d"), img = ctx.createImageData(g.w, g.h), px = img.data, LS = lut("seq", RAMP_SEQ);
+      for (let i = 0; i < g.v.length; i++) {
+        const u = g.v[i];
+        if (!u) continue;
+        const j = Math.round((u - 1) / 253 * 255) * 3, o = i * 4;
+        px[o] = LS[j]; px[o + 1] = LS[j + 1]; px[o + 2] = LS[j + 2]; px[o + 3] = 235;
+      }
+      ctx.putImageData(img, 0, 0);
+      P.layers.probe = new CanvasOverlay(cv, levelBounds(G.res * s, 0, 0, g.h, g.w), { pane: "emb", opacity: Math.max(S.opacity, .9), className: "px" }).addTo(P.map);
+      P.probeGrid = { g, s, t };
+      const sc = PROBES.scores[t.id][M.id];
+      const r2 = t.scope === "tract" ? sc.tract : sc.native;
+      setTitle(P, S.actual ? `Observed: ${t.name}` + (t.scope === "tract" ? " (tracts)" : "")
+        : `Predicted: ${t.name} · out-of-sample R² ${r2.toFixed(2)}` + (t.scope === "tract" ? ` (${PROBES.tracts} tracts)` : ` (${sc.native_cell_m} m)`));
+    } finally { busy(P, false); }
+  }
+}
+function r2Cell(v, tip) {
+  if (v == null) return `<td class="note" style="text-align:center" title="${tip || "Not computed at this resolution"}">–</td>`;
+  const t = tip ? ` title="${tip}"` : "";
+  if (v < 0) return `<td class="r2" style="background:#26292d;color:var(--faint)" title="R² = ${v.toFixed(2)}${tip ? "; " + tip : ""}">&lt;0</td>`;
+  const c = rampColor(RAMP_SEQ, Math.max(0, v)).map(Math.round), ink = v > .55 ? "#111" : "#eee";
+  return `<td class="r2" style="background:rgb(${c.join(",")});color:${ink}"${t}>${v.toFixed(2)}</td>`;
+}
+function probesTable() {
+  const cols = [...MAN.models.map(m => [m.id, m.short]), ...Object.entries(BASELINES)];
+  let h = `<div class="tscroll"><table class="stats probes"><tr><th></th>${cols.map(([id, n]) => `<th title="${n}"${id in BASELINES ? ' class="bl"' : ""}>${BASE_SHORT[id] || n}</th>`).join("")}</tr>`;
+  for (const lv of LEVELS) {
+    const ts = PROBES.targets.filter(t => t.level === lv);
+    if (!ts.length) continue;
+    h += `<tr class="lvl"><td colspan="${cols.length + 1}">${lv === "People" ? `Census <span class="note">(${PROBES.tracts} tracts)</span>` : lv}</td></tr>`;
+    for (const t of ts) {
+      const sc = PROBES.scores[t.id];
+      h += `<tr class="prow${t.id === S.target ? " on" : ""}" data-t="${t.id}"><td>${t.name}${t.aef_target ? ' <span title="AlphaEarth was trained to predict a related variable">★</span>' : ""}</td>` +
+        cols.map(([id]) => {
+          const e = sc[id];
+          const tip = id === "sar" ? (e && e.rho != null ? `ρ̂ = ${e.rho.toFixed(2)}` : "") + (S.pscale === "native" && t.scope === "cell" ? "Estimated at 480 m and for tracts only" : "") : "";
+          return r2Cell(e ? (t.scope === "tract" ? e.tract : e[S.pscale]) : null, tip);
+        }).join("") + "</tr>";
+    }
+  }
+  return h + "</table></div>";
+}
+function probesSide() {
+  const t = PROBES.targets.find(x => x.id === S.target);
+  return `
+    <h2>Linear probes</h2>
+    <p>Ridge regressions predict each variable from each model's 2024 embeddings. Scores are out-of-sample R²: the
+    study area is divided into ${PROBES.block_km} km blocks assigned at random to five folds, and each fold is predicted
+    from a fit to the other four. Census tracts are assigned to the block containing their centroid. R² = 0 corresponds
+    to predicting the mean; under this design, predicting the training-fold mean scores slightly below 0.</p>
+    <div class="row"><label>Resolution</label>${seg("pscale", [["coarse", "Common 480 m"], ["native", "Native"]], S.pscale)}</div>
+    ${probesTable()}
+    <p class="note">Select a row to map it. ★ AlphaEarth was trained to predict a related variable (elevation, land
+    cover, or lidar canopy height); its inputs are Sentinel-2, Landsat 8/9, and Sentinel-1 only.</p>
+    <p class="note">The last three columns are baselines without embeddings. <b>Raw S2</b>: the 10 Sentinel-2 bands.
+    <b>Location</b>: ridge regression on x, y, x², y², and xy. <b>AR(1)</b>: spatial lag model y = ρWy + α + ε, W = queen
+    contiguity (row-standardized), estimated by maximum likelihood on the training folds; held-out units are predicted
+    from the observed training values (ρ̂ on hover). Estimated at 480 m and for tracts only.</p>
+    <h2>${t.name}</h2>
+    <div class="row"><label>Show</label>${seg("actual", [[0, "Predictions"], [1, "Observed"]], S.actual ? 1 : 0)}</div>
+    <div class="legend"><div class="bar" style="background:${rampCss(RAMP_SEQ)}"></div>
+      <div class="ticks"><span>${fmtVal(t, t.lo)}</span><span>${fmtVal(t, t.hi)}</span></div></div>
+    <p class="note">Source: ${t.source}.${t.scope === "tract" ? ` Tract-level scores are imprecise (n = ${PROBES.tracts}).` : ""}
+    ${S.pscale === "native" && t.scope === "cell" ? "At native resolution, models with coarser cells predict smoother targets; compare at 480 m." : ""}</p>`;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+function onClick(P, ll) {
+  if (S.view !== "explore") return;
+  S.query = ll;
+  if (S.layer !== "sim") { S.layer = "sim"; renderSide(); }
+  writeHash();
+  drawExplore();
+}
+let hoverTok = 0;
+async function onHover(P, e) {
+  const M = P.M, tok = ++hoverTok;
+  const { r, c } = cellOf(M, e.latlng);
+  if (r < 0 || c < 0 || r >= M.h || c >= M.w || !M.mask[r * M.w + c]) { tip(null); return; }
+  let html = "";
+  if (S.view === "probes" && P.probeGrid) {
+    const { g, s, t } = P.probeGrid, p = PROJ.project(e.latlng);
+    const rr = Math.floor((G.y1 - p.y) / (G.res * s)), cc = Math.floor((p.x - G.x0) / (G.res * s));
+    const u = rr >= 0 && cc >= 0 && rr < g.h && cc < g.w ? g.v[rr * g.w + cc] : 0;
+    if (u) html = `<b>${M.meta.short}</b> ${S.actual ? "observed" : "predicted"}<br>${t.name}: ${fmtVal(t, probeVal(t, u))}`;
+  } else if (S.view === "change") {
+    const u = M.chg[S.pair];
+    if (u && u[r * M.w + c]) html = `<b>${M.meta.short}</b> ${S.pair.replace("_", "–")}<br>Cosine distance ${dOf(u[r * M.w + c]).toFixed(3)}`;
+  } else if (S.view === "explore" && S.layer === "clusters" && P.clusterGrid) {
+    const { g, e: ce } = P.clusterGrid, u = g.v[r * g.w + c];
+    if (u) {
+      const st = ce.clusters[u - 1];
+      html = `<b>${M.meta.short}</b> cluster ${u} of ${S.k}<br>${(100 * st.share).toFixed(1)}% of area<br>Mean NDVI ${st.ndvi.toFixed(2)} · impervious ${Math.round(st.impervious)}% · elevation ${Math.round(st.elevation)} m`;
+    }
+  } else if (S.layer === "sim" && SIM[M.id]) {
+    const st = SIM[M.id];
+    let s = null;
+    if (M.ov) {
+      const t = (M.data[st.yS] || { tiles: {} }).tiles[tileKeyAt(M, r, c)];
+      if (t && t.sim && P.detail[tileKeyAt(M, r, c)]) { const k = t.idx[(r - t.r0) * (t.c1 - t.c0) + (c - t.c0)]; if (k >= 0) s = t.sim[k]; }
+      if (s === null) { const k = M.ov.idx[((r / 2) | 0) * M.ov.w + ((c / 2) | 0)]; if (k >= 0) s = st.main[k]; }
+    } else { const k = M.idx[r * M.w + c]; if (k >= 0) s = st.main[k]; }
+    if (s !== null) {
+      const rank = 1 - lowerBound(st.sorted, s) / st.sorted.length;
+      html = `<b>${M.meta.short}</b> cosine similarity ${s.toFixed(3)}<br>Percentile ${(100 * (1 - rank)).toFixed(1)}`;
+    }
+  }
+  if (tok === hoverTok) tip(html ? { html, x: e.originalEvent.clientX, y: e.originalEvent.clientY } : null);
+}
+function lowerBound(a, x) { let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < x) lo = m + 1; else hi = m; } return lo; }
+function tip(t) {
+  const el = document.getElementById("tip");
+  if (!t) { el.style.display = "none"; return; }
+  el.innerHTML = t.html; el.style.display = "block";
+  el.style.left = (t.x + 14) + "px"; el.style.top = (t.y + 14) + "px";
+}
+let statusTimer;
+function status(msg, ms) {
+  const el = document.getElementById("status");
+  el.textContent = msg; el.style.display = msg ? "block" : "none";
+  clearTimeout(statusTimer);
+  if (ms) statusTimer = setTimeout(() => (el.style.display = "none"), ms);
+}
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.style.display = "block";
+  setTimeout(() => (el.style.display = "none"), 1800);
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Side panel
+// ---------------------------------------------------------------------------------------------------------------
+function allYears() { return [...new Set(MAN.models.flatMap(m => Object.keys(m.years)))].map(Number).sort(); }
+function allVecYears() { return [...new Set(Object.values(MODELS).flatMap(vecYears))].sort(); }
+function allPairs() { return [...new Set(MAN.models.flatMap(m => Object.keys(m.change)))].sort(); }
+function seg(id, opts, cur) {
+  return `<div class="seg" data-k="${id}">` + opts.map(([v, lab, dis]) =>
+    `<button data-val="${v}" class="${String(v) === String(cur) ? "on" : ""}" ${dis ? "disabled" : ""}>${lab}</button>`).join("") + "</div>";
+}
+function modelCards() {
+  return MAN.models.map(m => {
+    const v = m.pca_var && (m.pca_var[S.fit] || m.pca_var.all);
+    return `<div class="card"><h3>${m.name}</h3><table>
+      <tr><td>Developer</td><td>${m.org}, ${m.year}</td></tr>
+      <tr><td>Embedding</td><td>${m.native}</td></tr>
+      <tr><td>Similarity</td><td>${m.similarity}</td></tr>
+      ${m.debias ? `<tr><td>Correction</td><td>${m.debias}</td></tr>` : ""}
+      ${v ? `<tr><td>PCs 1–3</td><td>${v.map(x => Math.round(100 * x) + "%").join(" + ")} of variance</td></tr>` : ""}
+      <tr><td>Source</td><td>${m.source}</td></tr></table></div>`;
+  }).join("");
+}
+function renderSide() {
+  const side = document.getElementById("side");
+  const site = SITES.find(s => s.id === document.getElementById("site").value);
+  const siteNote = site && site.note ? `<p class="note">${site.note}</p>` : "";
+  if (S.view === "explore") {
+    const vy = allVecYears();
+    side.innerHTML = `
+      <h2>Embeddings</h2>
+      <p>Cells represent embedding values.</p>
+      ${siteNote}
+      <h2>Year</h2>${seg("year", allYears().map(y => [y, y]), S.year)}
+      <h2>Layer</h2>${seg("layer", [["pca", "Principal components"], ["sim", "Similarity"], ["clusters", "Clusters"], ["dim", "Single dimension"]], S.layer)}
+      <div id="layerctl"></div>
+      <div class="row"><label>Opacity</label><input type="range" id="opacity" min="0.2" max="1" step="0.05" value="${S.opacity}"><span class="val">${Math.round(S.opacity * 100)}%</span></div>
+      <h2>Model${MAN.models.length > 1 ? "s" : ""}</h2>${modelCards()}`;
+    const lc = side.querySelector("#layerctl");
+    if (S.layer === "pca") lc.innerHTML = `
+      <p class="note">First three principal components of the 64-dimensional vectors, displayed as red, green, and
+      blue.</p>
+      <div class="row"><label>PCA fit</label>${seg("fit", [["city", "Pasadena + Altadena"], ["all", "Full area"]], S.fit)}</div>`;
+    if (S.layer === "sim") lc.innerHTML = `
+      <p>${S.query ? "Select another location to change the query." : "<b>Select a location on the map.</b>"} Each cell is
+      colored by the cosine similarity of its vector to the vector at the selected location.</p>
+      <div class="row"><label>Highlight</label>${seg("top", [[1, "Top 1%"], [5, "5%"], [10, "10%"], [25, "25%"]], S.top)}</div>
+      <div class="legend"><div class="bar" style="background:${rampCss(RAMP_HOT)}"></div>
+        <div class="ticks"><span>Threshold</span><span>Maximum</span></div></div>
+      ${vy.length > 1 ? `<div class="row"><label>Search year</label>${seg("searchYear", vy.map(y => [y, y]), S.searchYear)}</div>
+      <p class="note">The query vector is from ${S.year}; it is compared with ${S.searchYear} vectors.</p>` : ""}
+      ${S.query ? `<button class="btn" id="clearq">Clear query (Esc)</button>` : ""}`;
+    if (S.layer === "clusters") lc.innerHTML = `
+      <div class="row"><label>k</label>${seg("k", [[4, "4"], [8, "8"], [12, "12"]], S.k)}</div>
+      <div class="key" style="gap:4px">${clusterColors(+S.k).map((c, i) => `<span><i style="background:${c};width:14px;height:10px"></i>${i + 1}</span>`).join("")}</div>
+      <p class="note">k-means clusters of each model's 2024 vectors. Clusters are ordered by mean NDVI, so colors are
+      approximately comparable across models. Hover for cluster means.</p>`;
+    if (S.layer === "dim") {
+      const D = Math.max(...MAN.models.map(m => m.dims));
+      lc.innerHTML = `
+      <div class="row"><label>Dimension</label><input type="range" id="dim" min="0" max="${D - 1}" step="1" value="${S.dim}"><span class="val">${S.dim + 1}</span></div>
+      <div class="legend"><div class="bar" style="background:${rampCss(RAMP_DIV)}"></div>
+        <div class="ticks"><span>negative</span><span>0</span><span>positive</span></div></div>
+      <p class="note">One coordinate of the vector (a principal component for SatMAE, Prithvi, and Clay). Individual
+      dimensions are not designed to be interpretable.</p>`;
+    }
+  } else if (S.view === "models") {
+    side.innerHTML = INPUTS ? modelsSide() : `<p class="note">Loading…</p>`;
+    if (!INPUTS) loadModelsData().then(() => { if (S.view === "models") renderSide(); });
+  } else if (S.view === "probes") {
+    side.innerHTML = PROBES ? probesSide() : `<p class="note">Loading…</p>`;
+    if (!PROBES && MAN.probes) loadProbes().then(() => { if (S.view === "probes") renderSide(); });
+    side.querySelectorAll(".prow").forEach(r => r.addEventListener("click", () => { S.target = r.dataset.t; renderSide(); writeHash(); redraw(); }));
+  } else {
+    const pairs = allPairs();
+    side.innerHTML = `
+      <h2>Change</h2>
+      <p>Cosine distance between a location's vectors in two years. Zero indicates identical vectors.</p>
+      ${siteNote}
+      <div class="row"><label>Compare</label><select id="pair">${pairs.map(p => `<option value="${p}" ${p === S.pair ? "selected" : ""}>${p.replace("_", "–")}</option>`).join("")}</select></div>
+      <div class="row"><label>Reference</label><select id="noise">${pairs.map(p => `<option value="${p}" ${p === S.noise ? "selected" : ""}>${p.replace("_", "–")}</option>`).join("")}</select></div>
+      <div class="row"><label>Threshold</label><input type="range" id="thr" min="0.02" max="0.8" step="0.01" value="${S.thr}"><span class="val">${S.thr.toFixed(2)}</span></div>
+      <div class="legend"><div class="bar" style="background:${rampCss(RAMP_HOT)}"></div>
+        <div class="ticks"><span>${S.thr.toFixed(2)}</span><span>${Math.max(1, S.thr + .2).toFixed(2)}+</span></div></div>
+      <h2>Eaton Fire perimeter</h2>
+      <div id="chgstats"><p class="note">Loading…</p></div>
+      <p class="note">Share of cells above the threshold inside and outside the perimeter. The reference pair is a
+      period without fire. The perimeter is CAL FIRE's final mapped boundary and includes unburned areas.</p>`;
+  }
+  wireSide();
+}
+async function renderChangeStats() {
+  const el = document.getElementById("chgstats");
+  if (!el) return;
+  const pct = x => x == null ? "–" : (100 * x).toFixed(1) + "%";
+  let html = `<table class="stats"><tr><th></th><th colspan="2">d ≥ ${S.thr.toFixed(2)}</th><th colspan="2">d ≥ reference p99</th></tr>
+    <tr><th></th><th>inside</th><th>outside</th><th>inside</th><th>outside</th></tr>`, charts = "";
+  for (const m of MAN.models) {
+    const M = MODELS[m.id], nz = m.change[S.noise], rel = nz ? nz.p99 : Infinity;
+    const a = await changeStats(M, S.pair, S.thr, rel), b = await changeStats(M, S.noise, S.thr, rel);
+    if (!a) continue;
+    html += `<tr><td>${m.short} ${S.pair.replace("_", "–")}</td><td>${pct(a.inShare)}</td><td>${pct(a.outShare)}</td>
+      <td>${nz ? pct(a.inRel) : "–"}</td><td>${nz ? pct(a.outRel) : "–"}</td></tr>`;
+    if (b) html += `<tr><td class="note">${m.short} ${S.noise.replace("_", "–")}</td><td>${pct(b.inShare)}</td><td>${pct(b.outShare)}</td>
+      <td class="note">${(100 * b.inRel).toFixed(1)}%</td><td class="note">${(100 * b.outRel).toFixed(1)}%</td></tr>`;
+    charts += histChart(m.short, a, b);
+  }
+  el.innerHTML = html + `</table><p class="note">Distances are on model-specific scales. The right-hand columns use each
+    model's 99th percentile in the reference pair (${MAN.models.filter(m => m.change[S.noise]).map(m => m.short + " " + m.change[S.noise].p99.toFixed(3)).join(", ")}),
+    which 1% of cells exceed by construction.</p>` + charts;
+}
+function histChart(name, a, b) {
+  const W = 330, H = 130, ml = 34, mb = 22, mt = 18, x = i => ml + (W - ml - 8) * i / 60;   // bin i = d in [i/50, (i+1)/50)
+  const all = [...a.hin, ...a.hout, ...(b ? [...b.hin, ...b.hout] : [])].filter(v => v > 0);
+  const lo = Math.log10(1e-4), hi = Math.log10(Math.max(...all));
+  const y = v => mt + (H - mt - mb) * (1 - (Math.log10(Math.max(v, 1e-4)) - lo) / (hi - lo));
+  const line = (h, col, dash) => `<path d="${Array.from(h).map((v, i) => (i ? "L" : "M") + x(i + .5).toFixed(1) + "," + y(v).toFixed(1)).join("")}" fill="none" stroke="${col}" stroke-width="1.6" ${dash ? 'stroke-dasharray="3 3"' : ""}/>`;
+  let g = "";
+  for (const t of [0, .2, .4, .6, .8, 1, 1.2]) g += `<line class="gr" x1="${x(t * 50)}" x2="${x(t * 50)}" y1="${mt}" y2="${H - mb}"/><text x="${x(t * 50)}" y="${H - 6}" text-anchor="middle">${t === 1.2 ? "1.2+" : t.toFixed(1)}</text>`;
+  for (const p of [-4, -3, -2, -1, 0]) if (p >= lo - .01 && p <= hi + .01) g += `<text x="${ml - 4}" y="${y(10 ** p) + 3}" text-anchor="end">${p === 0 ? "1" : "1e" + p}</text>`;
+  const tx = x(S.thr * 50);
+  return `<div class="card"><b>${name}</b> <span class="note">Distribution of distances (log scale)</span>
+    <svg class="chart" width="100%" viewBox="0 0 ${W} ${H}">${g}
+    <line x1="${tx}" x2="${tx}" y1="${mt}" y2="${H - mb}" stroke="#ffb347" stroke-dasharray="2 2"/>
+    ${b ? line(b.hin, "var(--noise)", true) + line(b.hout, "var(--noise)", false) : ""}
+    ${line(a.hout, "var(--out)")}${line(a.hin, "var(--in)")}
+    <line class="ax" x1="${ml}" x2="${W - 8}" y1="${H - mb}" y2="${H - mb}"/></svg>
+    <div class="key"><span><i style="background:var(--in)"></i>${S.pair.replace("_", "–")}, inside</span>
+    <span><i style="background:var(--out)"></i>${S.pair.replace("_", "–")}, outside</span>
+    ${b ? `<span><i style="background:var(--noise)"></i>${S.noise.replace("_", "–")} (dashed: inside)</span>` : ""}</div></div>`;
+}
+function wireSide() {
+  const side = document.getElementById("side");
+  side.querySelectorAll(".seg").forEach(sg => sg.addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    const k = sg.dataset.k, v = b.dataset.val;
+    if (k.startsWith("inOpt:")) S.inOpt[k.slice(6)] = v;
+    else S[k] = k === "actual" ? v === "1" : isNaN(+v) ? v : +v;
+    if (k === "rsite" && RECON) { const rs = RECON.sites.find(x => x.id === v); if (rs) PANES[0].map.setView(rs.ll, 13); }
+    if (k === "year" && !allVecYears().includes(S.searchYear)) S.searchYear = S.year;
+    if (k === "year" && allVecYears().includes(S.year)) S.searchYear = S.year;
+    renderSide(); writeHash(); redraw();
+  }));
+  const on = (id, ev, f) => { const el = side.querySelector("#" + id); if (el) el.addEventListener(ev, f); };
+  on("opacity", "input", e => {
+    S.opacity = +e.target.value;
+    e.target.nextElementSibling.textContent = Math.round(S.opacity * 100) + "%";
+    for (const P of PANES) { if (P.layers.rgb) P.layers.rgb.setOpacity(S.opacity); }
+    writeHash();
+  });
+  let dimT;
+  on("dim", "input", e => {
+    S.dim = +e.target.value; e.target.nextElementSibling.textContent = S.dim + 1;
+    clearTimeout(dimT); dimT = setTimeout(() => { writeHash(); redraw(); }, 120);
+  });
+  let thrT;
+  on("thr", "input", e => {
+    S.thr = +e.target.value; e.target.nextElementSibling.textContent = S.thr.toFixed(2);
+    side.querySelector(".legend .ticks span").textContent = S.thr.toFixed(2);
+    clearTimeout(thrT); thrT = setTimeout(() => { writeHash(); redraw(); }, 150);
+  });
+  on("pair", "change", e => { S.pair = e.target.value; writeHash(); redraw(); });
+  on("noise", "change", e => { S.noise = e.target.value; writeHash(); renderChangeStats(); });
+  on("clearq", "click", clearQuery);
+}
+function clearQuery() { S.query = null; for (const k in SIM) delete SIM[k]; renderSide(); writeHash(); redraw(); }
+function redraw() {
+  return S.view === "models" ? drawModels() : S.view === "explore" ? drawExplore() : S.view === "change" ? drawChange() : drawProbes();
+}
+function setView(v) {
+  S.view = v;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  renderSide(); writeHash(); redraw();
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------------------------------------------
+let AOI_GJ, EATON_GJ;
+async function boot() {
+  readHash();
+  if (location.protocol === "file:") throw new Error("This page reads its data with fetch(), which browsers block on file://. Run ./run.sh (it starts a local web server) or open the published site.");
+  MAN = await (await fetch("data/manifest.json")).json();
+  G = MAN.grid;
+  const [mk, em, aoi, eat] = await Promise.all([fetchGray("data/" + MAN.mask), fetchGray("data/" + MAN.eaton_mask),
+    fetch("data/" + MAN.aoi).then(r => r.json()), fetch("data/" + MAN.eaton).then(r => r.json())]);
+  BASE = { m: mk.v.map(v => v > 127 ? 1 : 0), h: mk.h, w: mk.w };
+  EATON = { v: em.v.map(v => v > 127 ? 1 : 0) };
+  AOI_GJ = aoi; EATON_GJ = eat;
+  if (BASE.w !== G.width || BASE.h !== G.height) throw new Error("mask.png does not match the grid");
+  for (const m of MAN.models) MODELS[m.id] = initModel(m);
+  const years = allYears();
+  if (!years.includes(S.year)) S.year = years.includes(MAN.ref_year) ? MAN.ref_year : years[years.length - 1];
+  if (!allVecYears().includes(S.searchYear)) S.searchYear = allVecYears().includes(S.year) ? S.year : allVecYears()[0];
+  const pairs = allPairs();
+  if (!pairs.includes(S.pair)) S.pair = pairs[pairs.length - 1];
+  if (!pairs.includes(S.noise)) S.noise = pairs[Math.max(0, pairs.length - 2)];
+
+  const sel = document.getElementById("site");
+  sel.innerHTML = SITES.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+  sel.addEventListener("change", () => {
+    const s = SITES.find(x => x.id === sel.value);
+    if (s.ll) PANES[0].map.setView(s.ll, s.z); else PANES[0].map.fitBounds(levelBounds(G.res, 0, 0, BASE.h, BASE.w));
+    renderSide();
+  });
+  const bm = document.getElementById("basemap");
+  bm.value = S.basemap;
+  bm.addEventListener("change", () => { S.basemap = bm.value; setBasemap(); writeHash(); });
+  document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => setView(b.dataset.v)));
+  document.getElementById("helpbtn").addEventListener("click", () => document.getElementById("help").classList.add("open"));
+  document.getElementById("linkbtn").addEventListener("click", async () => {
+    writeHash();
+    try { await navigator.clipboard.writeText(location.href); toast("Link copied"); } catch { toast("Copy the address bar"); }
+  });
+  document.addEventListener("keydown", e => {
+    if (e.target.matches("input, select, textarea")) return;
+    const views = { 1: "models", 2: "explore", 3: "change", 4: "probes" };
+    if (views[e.key]) setView(views[e.key]);
+    if (e.key === "Escape") { document.getElementById("help").classList.remove("open"); if (S.query) clearQuery(); }
+  });
+  buildPanes();
+  setView(S.view);
+  // warm the reference year's vectors so the first click is fast
+  status("Loading vectors…");
+  await Promise.all(Object.values(MODELS).filter(M => hasVectors(M, S.year)).map(M => ensureYear(M, S.year)));
+  status("");
+}
+boot().catch(err => {
+  console.error(err);
+  const el = document.getElementById("fatal");
+  el.style.display = "flex";
+  el.innerHTML = `<div><b>Could not start.</b><br>${err.message}</div>`;
+});
+</script>
+</body>
+</html>

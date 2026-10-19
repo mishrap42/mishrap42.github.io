@@ -1,0 +1,496 @@
+{
+ "grid": {
+  "crs": "EPSG:3857",
+  "res": 12.0,
+  "width": 1779,
+  "height": 1567,
+  "x0": -13158132.0,
+  "y1": 4062996.0,
+  "bounds_merc": [
+   -13158132.0,
+   4044192.0,
+   -13136784.0,
+   4062996.0
+  ],
+  "bounds_ll": [
+   34.11453748257584,
+   -118.20151086062165,
+   34.25427304728063,
+   -118.00973851376781
+  ],
+  "n_inside": 1509375,
+  "aoi_km2": 148.3
+ },
+ "mask": "mask.png",
+ "aoi": "aoi.geojson",
+ "eaton": "eaton.geojson",
+ "eaton_mask": "eaton_mask.png",
+ "vec_scale": 127.0,
+ "chg_encoding": "d = 2*((u-1)/254)^2",
+ "ref_year": 2024,
+ "models": [
+  {
+   "name": "SatMAE (fMoW-Sentinel, ViT-L)",
+   "short": "SatMAE",
+   "org": "Stanford",
+   "year": 2022,
+   "native": "8 \u00d7 8 patch of 10 m Sentinel-2 L1C (80 m); three band-group tokens averaged; 1,024 dimensions; computed at 4 offsets for a 40 m grid",
+   "source": "SatMAE ViT-L pretrained checkpoint (Zenodo 7338613) on Sentinel-2 L1C May\u2013September medians",
+   "attribution": "SatMAE \u00a9 Cong et al. 2022 (weights CC-BY 4.0, code CC BY-NC 4.0).",
+   "id": "satmae",
+   "scale": 4,
+   "shape": [
+    392,
+    445
+   ],
+   "years": {
+    "2023": {
+     "rgb": {
+      "all": "satmae/rgb_all_2023.webp",
+      "city": "satmae/rgb_city_2023.webp"
+     },
+     "vec": {
+      "file": "satmae/vec_2023.bin.gz",
+      "n": 95168
+     }
+    },
+    "2024": {
+     "rgb": {
+      "all": "satmae/rgb_all_2024.webp",
+      "city": "satmae/rgb_city_2024.webp"
+     },
+     "vec": {
+      "file": "satmae/vec_2024.bin.gz",
+      "n": 95168
+     }
+    },
+    "2025": {
+     "rgb": {
+      "all": "satmae/rgb_all_2025.webp",
+      "city": "satmae/rgb_city_2025.webp"
+     },
+     "vec": {
+      "file": "satmae/vec_2025.bin.gz",
+      "n": 95168
+     }
+    }
+   },
+   "change": {
+    "2023_2024": {
+     "file": "satmae/chg_2023_2024.png",
+     "p50": 0.0365,
+     "p95": 0.1089,
+     "p99": 0.2118
+    },
+    "2024_2025": {
+     "file": "satmae/chg_2024_2025.png",
+     "p50": 0.0765,
+     "p95": 0.8358,
+     "p99": 1.0597
+    }
+   },
+   "debias": "Chip-position component removed (34% of variance)",
+   "similarity": "Cosine after centering and PCA to 64 dimensions (84% of variance)",
+   "pca_k_var": 0.8368,
+   "pca_var": {
+    "all": [
+     0.2626,
+     0.072,
+     0.0519
+    ],
+    "city": [
+     0.1528,
+     0.0921,
+     0.0528
+    ]
+   },
+   "dims": 64,
+   "bytes": 14183360
+  },
+  {
+   "name": "Prithvi-EO-2.0 (300M-TL)",
+   "short": "Prithvi",
+   "org": "NASA & IBM",
+   "year": 2024,
+   "native": "16 \u00d7 16 patch of 30 m HLS (480 m) \u00d7 4 seasonal frames, 1,024 dimensions; computed at 16 offsets for a 120 m grid",
+   "source": "Prithvi-EO-2.0-300M-TL on HLS v2.0 seasonal medians",
+   "attribution": "Prithvi-EO-2.0 \u00a9 IBM and NASA (Apache-2.0); HLS courtesy of NASA LP DAAC.",
+   "id": "prithvi",
+   "scale": 12,
+   "shape": [
+    131,
+    149
+   ],
+   "years": {
+    "2023": {
+     "rgb": {
+      "all": "prithvi/rgb_all_2023.webp",
+      "city": "prithvi/rgb_city_2023.webp"
+     },
+     "vec": {
+      "file": "prithvi/vec_2023.bin.gz",
+      "n": 10813
+     }
+    },
+    "2024": {
+     "rgb": {
+      "all": "prithvi/rgb_all_2024.webp",
+      "city": "prithvi/rgb_city_2024.webp"
+     },
+     "vec": {
+      "file": "prithvi/vec_2024.bin.gz",
+      "n": 10813
+     }
+    },
+    "2025": {
+     "rgb": {
+      "all": "prithvi/rgb_all_2025.webp",
+      "city": "prithvi/rgb_city_2025.webp"
+     },
+     "vec": {
+      "file": "prithvi/vec_2025.bin.gz",
+      "n": 10813
+     }
+    }
+   },
+   "change": {
+    "2023_2024": {
+     "file": "prithvi/chg_2023_2024.png",
+     "p50": 0.017,
+     "p95": 0.0377,
+     "p99": 0.0573
+    },
+    "2024_2025": {
+     "file": "prithvi/chg_2024_2025.png",
+     "p50": 0.0655,
+     "p95": 0.4745,
+     "p99": 0.6335
+    }
+   },
+   "similarity": "Cosine after centering and PCA to 64 dimensions (83% of variance)",
+   "pca_k_var": 0.8269,
+   "pca_var": {
+    "all": [
+     0.1958,
+     0.0794,
+     0.0604
+    ],
+    "city": [
+     0.1415,
+     0.1081,
+     0.073
+    ]
+   },
+   "dims": 64,
+   "bytes": 1608327
+  },
+  {
+   "name": "Clay v1.5 (Sentinel-2)",
+   "short": "Clay",
+   "org": "Clay Foundation",
+   "year": 2024,
+   "native": "8 \u00d7 8 patch of 10 m Sentinel-2 (80 m), 1,024 dimensions; computed at 4 offsets for a 40 m grid",
+   "source": "Clay v1.5 on Sentinel-2 L2A May\u2013September medians",
+   "attribution": "Clay v1.5 \u00a9 Clay Foundation (Apache-2.0); contains modified Copernicus Sentinel data.",
+   "id": "clay_s2",
+   "scale": 4,
+   "shape": [
+    392,
+    445
+   ],
+   "years": {
+    "2023": {
+     "rgb": {
+      "all": "clay_s2/rgb_all_2023.webp",
+      "city": "clay_s2/rgb_city_2023.webp"
+     },
+     "vec": {
+      "file": "clay_s2/vec_2023.bin.gz",
+      "n": 95168
+     }
+    },
+    "2024": {
+     "rgb": {
+      "all": "clay_s2/rgb_all_2024.webp",
+      "city": "clay_s2/rgb_city_2024.webp"
+     },
+     "vec": {
+      "file": "clay_s2/vec_2024.bin.gz",
+      "n": 95168
+     }
+    },
+    "2025": {
+     "rgb": {
+      "all": "clay_s2/rgb_all_2025.webp",
+      "city": "clay_s2/rgb_city_2025.webp"
+     },
+     "vec": {
+      "file": "clay_s2/vec_2025.bin.gz",
+      "n": 95168
+     }
+    }
+   },
+   "change": {
+    "2023_2024": {
+     "file": "clay_s2/chg_2023_2024.png",
+     "p50": 0.0671,
+     "p95": 0.1834,
+     "p99": 0.3037
+    },
+    "2024_2025": {
+     "file": "clay_s2/chg_2024_2025.png",
+     "p50": 0.1304,
+     "p95": 1.0097,
+     "p99": 1.218
+    }
+   },
+   "debias": "Chip-position component removed (5% of variance)",
+   "similarity": "Cosine after centering and PCA to 64 dimensions (81% of variance)",
+   "pca_k_var": 0.8072,
+   "pca_var": {
+    "all": [
+     0.1955,
+     0.1051,
+     0.0664
+    ],
+    "city": [
+     0.1461,
+     0.1091,
+     0.0682
+    ]
+   },
+   "dims": 64,
+   "bytes": 14282128
+  },
+  {
+   "name": "AlphaEarth Foundations",
+   "short": "AlphaEarth",
+   "org": "Google DeepMind",
+   "year": 2025,
+   "native": "10 m pixel, 64 dimensions, one vector per calendar year",
+   "similarity": "Dot product of unit vectors",
+   "source": "GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL (Earth Engine)",
+   "attribution": "The AlphaEarth Foundations Satellite Embedding dataset is produced by Google and Google DeepMind (CC-BY 4.0).",
+   "id": "aef",
+   "scale": 1,
+   "shape": [
+    1567,
+    1779
+   ],
+   "years": {
+    "2017": {
+     "rgb": {
+      "all": "aef/rgb_all_2017.webp",
+      "city": "aef/rgb_city_2017.webp"
+     }
+    },
+    "2018": {
+     "rgb": {
+      "all": "aef/rgb_all_2018.webp",
+      "city": "aef/rgb_city_2018.webp"
+     }
+    },
+    "2019": {
+     "rgb": {
+      "all": "aef/rgb_all_2019.webp",
+      "city": "aef/rgb_city_2019.webp"
+     }
+    },
+    "2020": {
+     "rgb": {
+      "all": "aef/rgb_all_2020.webp",
+      "city": "aef/rgb_city_2020.webp"
+     }
+    },
+    "2021": {
+     "rgb": {
+      "all": "aef/rgb_all_2021.webp",
+      "city": "aef/rgb_city_2021.webp"
+     }
+    },
+    "2022": {
+     "rgb": {
+      "all": "aef/rgb_all_2022.webp",
+      "city": "aef/rgb_city_2022.webp"
+     }
+    },
+    "2023": {
+     "rgb": {
+      "all": "aef/rgb_all_2023.webp",
+      "city": "aef/rgb_city_2023.webp"
+     }
+    },
+    "2024": {
+     "rgb": {
+      "all": "aef/rgb_all_2024.webp",
+      "city": "aef/rgb_city_2024.webp"
+     },
+     "vec_ov": {
+      "file": "aef/vec_2024_ov.bin.gz",
+      "n": 378452
+     },
+     "vec_tiles": {
+      "dir": "aef/vec_2024",
+      "tile": 256,
+      "n": {
+       "0_0": 36868,
+       "0_2": 2651,
+       "0_3": 11498,
+       "0_4": 14796,
+       "1_0": 28409,
+       "1_1": 34968,
+       "1_2": 46396,
+       "1_3": 65491,
+       "1_4": 64952,
+       "1_5": 17166,
+       "2_0": 13866,
+       "2_1": 65219,
+       "2_2": 65536,
+       "2_3": 65536,
+       "2_4": 65536,
+       "2_5": 61738,
+       "2_6": 11895,
+       "3_0": 40379,
+       "3_1": 65536,
+       "3_2": 65536,
+       "3_3": 65536,
+       "3_4": 62677,
+       "3_5": 49737,
+       "3_6": 35316,
+       "4_0": 31292,
+       "4_1": 65536,
+       "4_2": 65536,
+       "4_3": 65536,
+       "4_4": 55341,
+       "5_0": 24213,
+       "5_1": 54149,
+       "5_2": 56569,
+       "5_3": 17476,
+       "5_4": 12922,
+       "6_2": 3567
+      }
+     }
+    },
+    "2025": {
+     "rgb": {
+      "all": "aef/rgb_all_2025.webp",
+      "city": "aef/rgb_city_2025.webp"
+     },
+     "vec_ov": {
+      "file": "aef/vec_2025_ov.bin.gz",
+      "n": 378452
+     },
+     "vec_tiles": {
+      "dir": "aef/vec_2025",
+      "tile": 256,
+      "n": {
+       "0_0": 36868,
+       "0_2": 2651,
+       "0_3": 11498,
+       "0_4": 14796,
+       "1_0": 28409,
+       "1_1": 34968,
+       "1_2": 46396,
+       "1_3": 65491,
+       "1_4": 64952,
+       "1_5": 17166,
+       "2_0": 13866,
+       "2_1": 65219,
+       "2_2": 65536,
+       "2_3": 65536,
+       "2_4": 65536,
+       "2_5": 61738,
+       "2_6": 11895,
+       "3_0": 40379,
+       "3_1": 65536,
+       "3_2": 65536,
+       "3_3": 65536,
+       "3_4": 62677,
+       "3_5": 49737,
+       "3_6": 35316,
+       "4_0": 31292,
+       "4_1": 65536,
+       "4_2": 65536,
+       "4_3": 65536,
+       "4_4": 55341,
+       "5_0": 24213,
+       "5_1": 54149,
+       "5_2": 56569,
+       "5_3": 17476,
+       "5_4": 12922,
+       "6_2": 3567
+      }
+     }
+    }
+   },
+   "change": {
+    "2017_2018": {
+     "file": "aef/chg_2017_2018.png",
+     "p50": 0.0191,
+     "p95": 0.0418,
+     "p99": 0.0618
+    },
+    "2018_2019": {
+     "file": "aef/chg_2018_2019.png",
+     "p50": 0.0233,
+     "p95": 0.0452,
+     "p99": 0.064
+    },
+    "2019_2020": {
+     "file": "aef/chg_2019_2020.png",
+     "p50": 0.0252,
+     "p95": 0.055,
+     "p99": 0.1208
+    },
+    "2020_2021": {
+     "file": "aef/chg_2020_2021.png",
+     "p50": 0.0247,
+     "p95": 0.0548,
+     "p99": 0.1068
+    },
+    "2021_2022": {
+     "file": "aef/chg_2021_2022.png",
+     "p50": 0.0211,
+     "p95": 0.0499,
+     "p99": 0.0671
+    },
+    "2022_2023": {
+     "file": "aef/chg_2022_2023.png",
+     "p50": 0.0345,
+     "p95": 0.0583,
+     "p99": 0.0749
+    },
+    "2023_2024": {
+     "file": "aef/chg_2023_2024.png",
+     "p50": 0.0286,
+     "p95": 0.0469,
+     "p99": 0.0616
+    },
+    "2024_2025": {
+     "file": "aef/chg_2024_2025.png",
+     "p50": 0.0346,
+     "p95": 0.2775,
+     "p99": 0.3586
+    }
+   },
+   "pca_var": {
+    "all": [
+     0.3744,
+     0.109,
+     0.1009
+    ],
+    "city": [
+     0.3066,
+     0.1561,
+     0.0812
+    ]
+   },
+   "dims": 64,
+   "bytes": 188856744
+  }
+ ],
+ "probes": "probes.json",
+ "inputs": "inputs.json",
+ "recon": "recon.json",
+ "clusters": "clusters.json"
+}

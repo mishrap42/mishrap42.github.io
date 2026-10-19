@@ -1,0 +1,226 @@
+{
+ "satmae": [
+  {
+   "key": "g1",
+   "label": "Group 1: B4, B3, B2 (with B8), 10 m",
+   "years": {
+    "2023": {
+     "file": "inputs/satmae_g1_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/satmae_g1_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/satmae_g1_2025.webp",
+     "scale": 1
+    }
+   }
+  },
+  {
+   "key": "g2",
+   "label": "Group 2: B7, B6, B5 (with B8A), 20 m",
+   "years": {
+    "2023": {
+     "file": "inputs/satmae_g2_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/satmae_g2_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/satmae_g2_2025.webp",
+     "scale": 1
+    }
+   }
+  },
+  {
+   "key": "g3",
+   "label": "Group 3: B12, B11, 20 m",
+   "years": {
+    "2023": {
+     "file": "inputs/satmae_g3_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/satmae_g3_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/satmae_g3_2025.webp",
+     "scale": 1
+    }
+   }
+  }
+ ],
+ "prithvi": [
+  {
+   "key": "t0",
+   "label": "Frame 1: February\u2013March median, true color, 30 m",
+   "years": {
+    "2023": {
+     "file": "inputs/prithvi_t0_2023.webp",
+     "scale": 3
+    },
+    "2024": {
+     "file": "inputs/prithvi_t0_2024.webp",
+     "scale": 3
+    },
+    "2025": {
+     "file": "inputs/prithvi_t0_2025.webp",
+     "scale": 3
+    }
+   }
+  },
+  {
+   "key": "t1",
+   "label": "Frame 2: May\u2013June median, true color, 30 m",
+   "years": {
+    "2023": {
+     "file": "inputs/prithvi_t1_2023.webp",
+     "scale": 3
+    },
+    "2024": {
+     "file": "inputs/prithvi_t1_2024.webp",
+     "scale": 3
+    },
+    "2025": {
+     "file": "inputs/prithvi_t1_2025.webp",
+     "scale": 3
+    }
+   }
+  },
+  {
+   "key": "t2",
+   "label": "Frame 3: August\u2013September median, true color, 30 m",
+   "years": {
+    "2023": {
+     "file": "inputs/prithvi_t2_2023.webp",
+     "scale": 3
+    },
+    "2024": {
+     "file": "inputs/prithvi_t2_2024.webp",
+     "scale": 3
+    },
+    "2025": {
+     "file": "inputs/prithvi_t2_2025.webp",
+     "scale": 3
+    }
+   }
+  },
+  {
+   "key": "t3",
+   "label": "Frame 4: November\u2013December median, true color, 30 m",
+   "years": {
+    "2023": {
+     "file": "inputs/prithvi_t3_2023.webp",
+     "scale": 3
+    },
+    "2024": {
+     "file": "inputs/prithvi_t3_2024.webp",
+     "scale": 3
+    },
+    "2025": {
+     "file": "inputs/prithvi_t3_2025.webp",
+     "scale": 3
+    }
+   }
+  }
+ ],
+ "clay_s2": [
+  {
+   "key": "rgb",
+   "label": "True color: B4, B3, B2, May\u2013September median, 10 m",
+   "years": {
+    "2023": {
+     "file": "inputs/clay_s2_rgb_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/clay_s2_rgb_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/clay_s2_rgb_2025.webp",
+     "scale": 1
+    }
+   }
+  },
+  {
+   "key": "nir",
+   "label": "Color infrared: B8, B4, B3",
+   "years": {
+    "2023": {
+     "file": "inputs/clay_s2_nir_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/clay_s2_nir_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/clay_s2_nir_2025.webp",
+     "scale": 1
+    }
+   }
+  }
+ ],
+ "aef": [
+  {
+   "key": "s2",
+   "label": "Sentinel-2: true color, May\u2013September median",
+   "years": {
+    "2023": {
+     "file": "inputs/aef_s2_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/aef_s2_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/aef_s2_2025.webp",
+     "scale": 1
+    }
+   }
+  },
+  {
+   "key": "ls",
+   "label": "Landsat 8/9: true color, May\u2013September median, 30 m",
+   "years": {
+    "2023": {
+     "file": "inputs/aef_ls_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/aef_ls_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/aef_ls_2025.webp",
+     "scale": 1
+    }
+   }
+  },
+  {
+   "key": "s1",
+   "label": "Sentinel-1: VV, VH, VV \u2212 VH (dB), annual median",
+   "years": {
+    "2023": {
+     "file": "inputs/aef_s1_2023.webp",
+     "scale": 1
+    },
+    "2024": {
+     "file": "inputs/aef_s1_2024.webp",
+     "scale": 1
+    },
+    "2025": {
+     "file": "inputs/aef_s1_2025.webp",
+     "scale": 1
+    }
+   }
+  }
+ ]
+}

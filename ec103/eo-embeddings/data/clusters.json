@@ -1,0 +1,653 @@
+{
+ "ks": [
+  4,
+  8,
+  12
+ ],
+ "models": {
+  "satmae": {
+   "4": {
+    "file": "clusters/satmae_k4.png",
+    "clusters": [
+     {
+      "share": 0.2693,
+      "ndvi": 0.289,
+      "impervious": 42.039,
+      "elevation": 344.627
+     },
+     {
+      "share": 0.2903,
+      "ndvi": 0.394,
+      "impervious": 35.731,
+      "elevation": 302.526
+     },
+     {
+      "share": 0.1774,
+      "ndvi": 0.487,
+      "impervious": 1.349,
+      "elevation": 760.22
+     },
+     {
+      "share": 0.263,
+      "ndvi": 0.664,
+      "impervious": 0.957,
+      "elevation": 895.861
+     }
+    ]
+   },
+   "8": {
+    "file": "clusters/satmae_k8.png",
+    "clusters": [
+     {
+      "share": 0.1697,
+      "ndvi": 0.188,
+      "impervious": 59.094,
+      "elevation": 289.09
+     },
+     {
+      "share": 0.1557,
+      "ndvi": 0.339,
+      "impervious": 41.512,
+      "elevation": 301.826
+     },
+     {
+      "share": 0.1178,
+      "ndvi": 0.458,
+      "impervious": 10.758,
+      "elevation": 542.259
+     },
+     {
+      "share": 0.0839,
+      "ndvi": 0.474,
+      "impervious": 25.585,
+      "elevation": 312.259
+     },
+     {
+      "share": 0.0838,
+      "ndvi": 0.482,
+      "impervious": 24.996,
+      "elevation": 324.594
+     },
+     {
+      "share": 0.1293,
+      "ndvi": 0.488,
+      "impervious": 0.367,
+      "elevation": 765.554
+     },
+     {
+      "share": 0.0858,
+      "ndvi": 0.574,
+      "impervious": 1.1,
+      "elevation": 782.205
+     },
+     {
+      "share": 0.1739,
+      "ndvi": 0.701,
+      "impervious": 0.226,
+      "elevation": 986.874
+     }
+    ]
+   },
+   "12": {
+    "file": "clusters/satmae_k12.png",
+    "clusters": [
+     {
+      "share": 0.0983,
+      "ndvi": 0.159,
+      "impervious": 60.665,
+      "elevation": 289.177
+     },
+     {
+      "share": 0.0736,
+      "ndvi": 0.23,
+      "impervious": 58.153,
+      "elevation": 282.312
+     },
+     {
+      "share": 0.0882,
+      "ndvi": 0.345,
+      "impervious": 39.315,
+      "elevation": 307.014
+     },
+     {
+      "share": 0.0752,
+      "ndvi": 0.373,
+      "impervious": 37.716,
+      "elevation": 311.009
+     },
+     {
+      "share": 0.0611,
+      "ndvi": 0.414,
+      "impervious": 32.733,
+      "elevation": 299.256
+     },
+     {
+      "share": 0.0608,
+      "ndvi": 0.421,
+      "impervious": 2.267,
+      "elevation": 821.638
+     },
+     {
+      "share": 0.0852,
+      "ndvi": 0.454,
+      "impervious": 15.976,
+      "elevation": 400.417
+     },
+     {
+      "share": 0.0705,
+      "ndvi": 0.495,
+      "impervious": 24.518,
+      "elevation": 316.897
+     },
+     {
+      "share": 0.1065,
+      "ndvi": 0.501,
+      "impervious": 0.215,
+      "elevation": 730.204
+     },
+     {
+      "share": 0.0528,
+      "ndvi": 0.602,
+      "impervious": 5.346,
+      "elevation": 654.066
+     },
+     {
+      "share": 0.0779,
+      "ndvi": 0.655,
+      "impervious": 1.038,
+      "elevation": 872.887
+     },
+     {
+      "share": 0.1497,
+      "ndvi": 0.678,
+      "impervious": 0.12,
+      "elevation": 977.659
+     }
+    ]
+   }
+  },
+  "prithvi": {
+   "4": {
+    "file": "clusters/prithvi_k4.png",
+    "clusters": [
+     {
+      "share": 0.2898,
+      "ndvi": 0.293,
+      "impervious": 45.331,
+      "elevation": 304.22
+     },
+     {
+      "share": 0.2232,
+      "ndvi": 0.412,
+      "impervious": 33.129,
+      "elevation": 295.744
+     },
+     {
+      "share": 0.267,
+      "ndvi": 0.529,
+      "impervious": 1.849,
+      "elevation": 807.642
+     },
+     {
+      "share": 0.22,
+      "ndvi": 0.617,
+      "impervious": 4.85,
+      "elevation": 827.413
+     }
+    ]
+   },
+   "8": {
+    "file": "clusters/prithvi_k8.png",
+    "clusters": [
+     {
+      "share": 0.1505,
+      "ndvi": 0.215,
+      "impervious": 61.598,
+      "elevation": 265.172
+     },
+     {
+      "share": 0.1322,
+      "ndvi": 0.384,
+      "impervious": 36.075,
+      "elevation": 305.28
+     },
+     {
+      "share": 0.1232,
+      "ndvi": 0.399,
+      "impervious": 23.905,
+      "elevation": 348.775
+     },
+     {
+      "share": 0.1233,
+      "ndvi": 0.433,
+      "impervious": 30.91,
+      "elevation": 285.346
+     },
+     {
+      "share": 0.1082,
+      "ndvi": 0.496,
+      "impervious": 5.233,
+      "elevation": 610.58
+     },
+     {
+      "share": 0.13,
+      "ndvi": 0.52,
+      "impervious": 1.372,
+      "elevation": 824.701
+     },
+     {
+      "share": 0.1222,
+      "ndvi": 0.616,
+      "impervious": 3.8,
+      "elevation": 1014.008
+     },
+     {
+      "share": 0.1105,
+      "ndvi": 0.648,
+      "impervious": 0.836,
+      "elevation": 871.222
+     }
+    ]
+   },
+   "12": {
+    "file": "clusters/prithvi_k12.png",
+    "clusters": [
+     {
+      "share": 0.1076,
+      "ndvi": 0.193,
+      "impervious": 65.443,
+      "elevation": 255.925
+     },
+     {
+      "share": 0.0929,
+      "ndvi": 0.331,
+      "impervious": 41.112,
+      "elevation": 306.031
+     },
+     {
+      "share": 0.0754,
+      "ndvi": 0.361,
+      "impervious": 38.262,
+      "elevation": 318.197
+     },
+     {
+      "share": 0.0982,
+      "ndvi": 0.393,
+      "impervious": 36.341,
+      "elevation": 294.391
+     },
+     {
+      "share": 0.0816,
+      "ndvi": 0.407,
+      "impervious": 20.202,
+      "elevation": 376.509
+     },
+     {
+      "share": 0.0581,
+      "ndvi": 0.484,
+      "impervious": 16.481,
+      "elevation": 397.912
+     },
+     {
+      "share": 0.066,
+      "ndvi": 0.49,
+      "impervious": 22.642,
+      "elevation": 273.723
+     },
+     {
+      "share": 0.0797,
+      "ndvi": 0.523,
+      "impervious": 0.844,
+      "elevation": 744.979
+     },
+     {
+      "share": 0.11,
+      "ndvi": 0.533,
+      "impervious": 1.302,
+      "elevation": 729.121
+     },
+     {
+      "share": 0.056,
+      "ndvi": 0.542,
+      "impervious": 6.569,
+      "elevation": 792.815
+     },
+     {
+      "share": 0.087,
+      "ndvi": 0.592,
+      "impervious": 0.879,
+      "elevation": 1172.398
+     },
+     {
+      "share": 0.0877,
+      "ndvi": 0.689,
+      "impervious": 0.328,
+      "elevation": 971.395
+     }
+    ]
+   }
+  },
+  "clay_s2": {
+   "4": {
+    "file": "clusters/clay_s2_k4.png",
+    "clusters": [
+     {
+      "share": 0.2248,
+      "ndvi": 0.236,
+      "impervious": 48.465,
+      "elevation": 338.153
+     },
+     {
+      "share": 0.2954,
+      "ndvi": 0.394,
+      "impervious": 34.614,
+      "elevation": 314.876
+     },
+     {
+      "share": 0.2707,
+      "ndvi": 0.566,
+      "impervious": 1.375,
+      "elevation": 748.524
+     },
+     {
+      "share": 0.2091,
+      "ndvi": 0.625,
+      "impervious": 3.295,
+      "elevation": 858.355
+     }
+    ]
+   },
+   "8": {
+    "file": "clusters/clay_s2_k8.png",
+    "clusters": [
+     {
+      "share": 0.1123,
+      "ndvi": 0.196,
+      "impervious": 62.02,
+      "elevation": 274.382
+     },
+     {
+      "share": 0.0913,
+      "ndvi": 0.298,
+      "impervious": 45.407,
+      "elevation": 326.9
+     },
+     {
+      "share": 0.1073,
+      "ndvi": 0.353,
+      "impervious": 28.8,
+      "elevation": 367.806
+     },
+     {
+      "share": 0.1425,
+      "ndvi": 0.388,
+      "impervious": 36.071,
+      "elevation": 303.903
+     },
+     {
+      "share": 0.1064,
+      "ndvi": 0.461,
+      "impervious": 3.984,
+      "elevation": 837.316
+     },
+     {
+      "share": 0.1119,
+      "ndvi": 0.512,
+      "impervious": 20.462,
+      "elevation": 308.445
+     },
+     {
+      "share": 0.1636,
+      "ndvi": 0.535,
+      "impervious": 0.499,
+      "elevation": 712.82
+     },
+     {
+      "share": 0.1646,
+      "ndvi": 0.711,
+      "impervious": 0.284,
+      "elevation": 1016.817
+     }
+    ]
+   },
+   "12": {
+    "file": "clusters/clay_s2_k12.png",
+    "clusters": [
+     {
+      "share": 0.0912,
+      "ndvi": 0.156,
+      "impervious": 61.297,
+      "elevation": 297.52
+     },
+     {
+      "share": 0.0643,
+      "ndvi": 0.236,
+      "impervious": 56.612,
+      "elevation": 282.45
+     },
+     {
+      "share": 0.0788,
+      "ndvi": 0.323,
+      "impervious": 46.393,
+      "elevation": 288.374
+     },
+     {
+      "share": 0.1091,
+      "ndvi": 0.356,
+      "impervious": 37.732,
+      "elevation": 328.479
+     },
+     {
+      "share": 0.0753,
+      "ndvi": 0.429,
+      "impervious": 2.761,
+      "elevation": 835.237
+     },
+     {
+      "share": 0.0812,
+      "ndvi": 0.441,
+      "impervious": 30.233,
+      "elevation": 292.715
+     },
+     {
+      "share": 0.0713,
+      "ndvi": 0.462,
+      "impervious": 13.308,
+      "elevation": 413.478
+     },
+     {
+      "share": 0.0725,
+      "ndvi": 0.516,
+      "impervious": 1.37,
+      "elevation": 526.855
+     },
+     {
+      "share": 0.0817,
+      "ndvi": 0.533,
+      "impervious": 17.299,
+      "elevation": 330.063
+     },
+     {
+      "share": 0.0947,
+      "ndvi": 0.556,
+      "impervious": 0.123,
+      "elevation": 838.257
+     },
+     {
+      "share": 0.0716,
+      "ndvi": 0.643,
+      "impervious": 0.35,
+      "elevation": 1110.63
+     },
+     {
+      "share": 0.1082,
+      "ndvi": 0.728,
+      "impervious": 0.158,
+      "elevation": 988.577
+     }
+    ]
+   }
+  },
+  "aef": {
+   "4": {
+    "file": "clusters/aef_k4.png",
+    "clusters": [
+     {
+      "share": 0.4882,
+      "ndvi": 0.324,
+      "impervious": 43.117,
+      "elevation": 292.873
+     },
+     {
+      "share": 0.1706,
+      "ndvi": 0.555,
+      "impervious": 0.425,
+      "elevation": 908.344
+     },
+     {
+      "share": 0.1684,
+      "ndvi": 0.581,
+      "impervious": 0.188,
+      "elevation": 946.046
+     },
+     {
+      "share": 0.1728,
+      "ndvi": 0.592,
+      "impervious": 6.257,
+      "elevation": 539.777
+     }
+    ]
+   },
+   "8": {
+    "file": "clusters/aef_k8.png",
+    "clusters": [
+     {
+      "share": 0.1152,
+      "ndvi": 0.115,
+      "impervious": 67.994,
+      "elevation": 264.678
+     },
+     {
+      "share": 0.2194,
+      "ndvi": 0.331,
+      "impervious": 43.585,
+      "elevation": 293.174
+     },
+     {
+      "share": 0.0916,
+      "ndvi": 0.499,
+      "impervious": 8.247,
+      "elevation": 414.053
+     },
+     {
+      "share": 0.1101,
+      "ndvi": 0.503,
+      "impervious": 0.316,
+      "elevation": 885.669
+     },
+     {
+      "share": 0.1902,
+      "ndvi": 0.506,
+      "impervious": 20.88,
+      "elevation": 312.016
+     },
+     {
+      "share": 0.115,
+      "ndvi": 0.585,
+      "impervious": 0.157,
+      "elevation": 963.284
+     },
+     {
+      "share": 0.0919,
+      "ndvi": 0.6,
+      "impervious": 0.404,
+      "elevation": 925.859
+     },
+     {
+      "share": 0.0666,
+      "ndvi": 0.709,
+      "impervious": 0.36,
+      "elevation": 976.558
+     }
+    ]
+   },
+   "12": {
+    "file": "clusters/aef_k12.png",
+    "clusters": [
+     {
+      "share": 0.0918,
+      "ndvi": 0.119,
+      "impervious": 73.178,
+      "elevation": 258.942
+     },
+     {
+      "share": 0.0371,
+      "ndvi": 0.15,
+      "impervious": 48.101,
+      "elevation": 284.695
+     },
+     {
+      "share": 0.1023,
+      "ndvi": 0.29,
+      "impervious": 35.45,
+      "elevation": 336.202
+     },
+     {
+      "share": 0.1821,
+      "ndvi": 0.389,
+      "impervious": 41.02,
+      "elevation": 284.284
+     },
+     {
+      "share": 0.0894,
+      "ndvi": 0.496,
+      "impervious": 0.374,
+      "elevation": 878.305
+     },
+     {
+      "share": 0.0698,
+      "ndvi": 0.527,
+      "impervious": 4.561,
+      "elevation": 487.912
+     },
+     {
+      "share": 0.0319,
+      "ndvi": 0.529,
+      "impervious": 8.313,
+      "elevation": 297.064
+     },
+     {
+      "share": 0.0872,
+      "ndvi": 0.549,
+      "impervious": 0.178,
+      "elevation": 1010.414
+     },
+     {
+      "share": 0.1113,
+      "ndvi": 0.571,
+      "impervious": 17.323,
+      "elevation": 318.795
+     },
+     {
+      "share": 0.0781,
+      "ndvi": 0.59,
+      "impervious": 0.512,
+      "elevation": 907.741
+     },
+     {
+      "share": 0.062,
+      "ndvi": 0.642,
+      "impervious": 0.234,
+      "elevation": 868.164
+     },
+     {
+      "share": 0.057,
+      "ndvi": 0.713,
+      "impervious": 0.397,
+      "elevation": 1046.255
+     }
+    ]
+   }
+  }
+ }
+}

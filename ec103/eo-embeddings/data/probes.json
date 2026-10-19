@@ -1,0 +1,700 @@
+{
+ "targets": [
+  {
+   "id": "ndvi",
+   "name": "NDVI",
+   "unit": "",
+   "level": "Spectral",
+   "source": "Sentinel-2, May\u2013September 2024",
+   "aef_target": false,
+   "scope": "cell",
+   "lo": 0.008,
+   "hi": 0.828
+  },
+  {
+   "id": "lst",
+   "name": "Land surface temperature (summer)",
+   "unit": "\u00b0C",
+   "level": "Spectral",
+   "source": "Landsat 8/9 thermal, June\u2013September 2024",
+   "aef_target": false,
+   "scope": "cell",
+   "lo": 28.377,
+   "hi": 45.697
+  },
+  {
+   "id": "elevation",
+   "name": "Elevation",
+   "unit": "m",
+   "level": "Terrain",
+   "source": "USGS 3DEP 10 m",
+   "aef_target": true,
+   "scope": "cell",
+   "lo": 202.006,
+   "hi": 1523.875
+  },
+  {
+   "id": "slope",
+   "name": "Slope",
+   "unit": "\u00b0",
+   "level": "Terrain",
+   "source": "Derived from USGS 3DEP",
+   "aef_target": true,
+   "scope": "cell",
+   "lo": 0.473,
+   "hi": 50.741
+  },
+  {
+   "id": "impervious",
+   "name": "Impervious surface",
+   "unit": "%",
+   "level": "Land cover",
+   "source": "NLCD 2021",
+   "aef_target": true,
+   "scope": "cell",
+   "lo": 0.0,
+   "hi": 85.0
+  },
+  {
+   "id": "canopy",
+   "name": "Tree canopy cover",
+   "unit": "%",
+   "level": "Land cover",
+   "source": "NLCD 2021 tree canopy",
+   "aef_target": true,
+   "scope": "cell",
+   "lo": 0.0,
+   "hi": 61.0
+  },
+  {
+   "id": "buildings",
+   "name": "Building footprint share",
+   "unit": "%",
+   "level": "Structure",
+   "source": "Microsoft US Building Footprints",
+   "aef_target": false,
+   "scope": "cell",
+   "lo": 0.0,
+   "hi": 96.0
+  },
+  {
+   "id": "height",
+   "name": "Canopy height",
+   "unit": "m",
+   "level": "Structure",
+   "source": "Meta/WRI 1 m canopy height",
+   "aef_target": true,
+   "scope": "cell",
+   "lo": 0.0,
+   "hi": 14.46
+  },
+  {
+   "id": "income",
+   "name": "Median household income (log)",
+   "unit": "log $",
+   "level": "People",
+   "source": "ACS 2019\u201323",
+   "aef_target": false,
+   "scope": "tract",
+   "n": 48,
+   "lo": 10.784,
+   "hi": 12.429
+  },
+  {
+   "id": "ba",
+   "name": "Bachelor's degree or higher",
+   "unit": "%",
+   "level": "People",
+   "source": "ACS 2019\u201323",
+   "aef_target": false,
+   "scope": "tract",
+   "n": 48,
+   "lo": 23.248,
+   "hi": 78.153
+  },
+  {
+   "id": "owner",
+   "name": "Owner-occupied housing",
+   "unit": "%",
+   "level": "People",
+   "source": "ACS 2019\u201323",
+   "aef_target": false,
+   "scope": "tract",
+   "n": 48,
+   "lo": 5.287,
+   "hi": 92.132
+  },
+  {
+   "id": "value",
+   "name": "Median home value (log)",
+   "unit": "log $",
+   "level": "People",
+   "source": "ACS 2019\u201323",
+   "aef_target": false,
+   "scope": "tract",
+   "n": 48,
+   "lo": 13.391,
+   "hi": 14.509
+  },
+  {
+   "id": "density",
+   "name": "Population density (log)",
+   "unit": "log per km\u00b2",
+   "level": "People",
+   "source": "ACS 2019\u201323",
+   "aef_target": false,
+   "scope": "tract",
+   "n": 48,
+   "lo": 5.843,
+   "hi": 8.864
+  }
+ ],
+ "models": [
+  "satmae",
+  "prithvi",
+  "clay_s2",
+  "aef",
+  "raw",
+  "xy",
+  "sar"
+ ],
+ "scores": {
+  "ndvi": {
+   "satmae": {
+    "native": 0.915,
+    "native_cell_m": 40,
+    "coarse": 0.981
+   },
+   "prithvi": {
+    "native": 0.868,
+    "native_cell_m": 120,
+    "coarse": 0.973
+   },
+   "clay_s2": {
+    "native": 0.892,
+    "native_cell_m": 40,
+    "coarse": 0.969
+   },
+   "aef": {
+    "native": 0.851,
+    "native_cell_m": 10,
+    "coarse": 0.991
+   },
+   "raw": {
+    "native": 0.935,
+    "native_cell_m": 10,
+    "coarse": 0.986
+   },
+   "xy": {
+    "native": 0.206,
+    "native_cell_m": 10,
+    "coarse": 0.463
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.655,
+    "rho": 0.892
+   }
+  },
+  "lst": {
+   "satmae": {
+    "native": 0.905,
+    "native_cell_m": 40,
+    "coarse": 0.96
+   },
+   "prithvi": {
+    "native": 0.935,
+    "native_cell_m": 120,
+    "coarse": 0.968
+   },
+   "clay_s2": {
+    "native": 0.872,
+    "native_cell_m": 40,
+    "coarse": 0.948
+   },
+   "aef": {
+    "native": 0.947,
+    "native_cell_m": 10,
+    "coarse": 0.983
+   },
+   "raw": {
+    "native": 0.584,
+    "native_cell_m": 10,
+    "coarse": 0.907
+   },
+   "xy": {
+    "native": 0.555,
+    "native_cell_m": 10,
+    "coarse": 0.603
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.837,
+    "rho": 0.898
+   }
+  },
+  "elevation": {
+   "satmae": {
+    "native": 0.614,
+    "native_cell_m": 40,
+    "coarse": 0.781
+   },
+   "prithvi": {
+    "native": 0.907,
+    "native_cell_m": 120,
+    "coarse": 0.937
+   },
+   "clay_s2": {
+    "native": 0.741,
+    "native_cell_m": 40,
+    "coarse": 0.879
+   },
+   "aef": {
+    "native": 0.952,
+    "native_cell_m": 10,
+    "coarse": 0.98
+   },
+   "raw": {
+    "native": 0.324,
+    "native_cell_m": 10,
+    "coarse": 0.807
+   },
+   "xy": {
+    "native": 0.885,
+    "native_cell_m": 10,
+    "coarse": 0.893
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.972,
+    "rho": 0.983
+   }
+  },
+  "slope": {
+   "satmae": {
+    "native": 0.803,
+    "native_cell_m": 40,
+    "coarse": 0.925
+   },
+   "prithvi": {
+    "native": 0.912,
+    "native_cell_m": 120,
+    "coarse": 0.966
+   },
+   "clay_s2": {
+    "native": 0.798,
+    "native_cell_m": 40,
+    "coarse": 0.93
+   },
+   "aef": {
+    "native": 0.871,
+    "native_cell_m": 10,
+    "coarse": 0.994
+   },
+   "raw": {
+    "native": 0.381,
+    "native_cell_m": 10,
+    "coarse": 0.883
+   },
+   "xy": {
+    "native": 0.526,
+    "native_cell_m": 10,
+    "coarse": 0.661
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.888,
+    "rho": 0.967
+   }
+  },
+  "impervious": {
+   "satmae": {
+    "native": 0.841,
+    "native_cell_m": 40,
+    "coarse": 0.964
+   },
+   "prithvi": {
+    "native": 0.865,
+    "native_cell_m": 120,
+    "coarse": 0.95
+   },
+   "clay_s2": {
+    "native": 0.825,
+    "native_cell_m": 40,
+    "coarse": 0.942
+   },
+   "aef": {
+    "native": 0.875,
+    "native_cell_m": 10,
+    "coarse": 0.987
+   },
+   "raw": {
+    "native": 0.671,
+    "native_cell_m": 10,
+    "coarse": 0.954
+   },
+   "xy": {
+    "native": 0.401,
+    "native_cell_m": 10,
+    "coarse": 0.533
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.775,
+    "rho": 0.945
+   }
+  },
+  "canopy": {
+   "satmae": {
+    "native": 0.868,
+    "native_cell_m": 40,
+    "coarse": 0.959
+   },
+   "prithvi": {
+    "native": 0.877,
+    "native_cell_m": 120,
+    "coarse": 0.956
+   },
+   "clay_s2": {
+    "native": 0.847,
+    "native_cell_m": 40,
+    "coarse": 0.943
+   },
+   "aef": {
+    "native": 0.848,
+    "native_cell_m": 10,
+    "coarse": 0.977
+   },
+   "raw": {
+    "native": 0.66,
+    "native_cell_m": 10,
+    "coarse": 0.931
+   },
+   "xy": {
+    "native": 0.388,
+    "native_cell_m": 10,
+    "coarse": 0.628
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.74,
+    "rho": 0.911
+   }
+  },
+  "buildings": {
+   "satmae": {
+    "native": 0.51,
+    "native_cell_m": 40,
+    "coarse": 0.927
+   },
+   "prithvi": {
+    "native": 0.709,
+    "native_cell_m": 120,
+    "coarse": 0.917
+   },
+   "clay_s2": {
+    "native": 0.491,
+    "native_cell_m": 40,
+    "coarse": 0.916
+   },
+   "aef": {
+    "native": 0.345,
+    "native_cell_m": 10,
+    "coarse": 0.955
+   },
+   "raw": {
+    "native": 0.255,
+    "native_cell_m": 10,
+    "coarse": 0.874
+   },
+   "xy": {
+    "native": 0.106,
+    "native_cell_m": 10,
+    "coarse": 0.551
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.773,
+    "rho": 0.932
+   }
+  },
+  "height": {
+   "satmae": {
+    "native": 0.547,
+    "native_cell_m": 40,
+    "coarse": 0.796
+   },
+   "prithvi": {
+    "native": 0.558,
+    "native_cell_m": 120,
+    "coarse": 0.688
+   },
+   "clay_s2": {
+    "native": 0.549,
+    "native_cell_m": 40,
+    "coarse": 0.779
+   },
+   "aef": {
+    "native": 0.512,
+    "native_cell_m": 10,
+    "coarse": 0.924
+   },
+   "raw": {
+    "native": 0.308,
+    "native_cell_m": 10,
+    "coarse": 0.688
+   },
+   "xy": {
+    "native": 0.084,
+    "native_cell_m": 10,
+    "coarse": 0.337
+   },
+   "sar": {
+    "native": null,
+    "coarse": 0.384,
+    "rho": 0.77
+   }
+  },
+  "income": {
+   "satmae": {
+    "tract": 0.348
+   },
+   "prithvi": {
+    "tract": -0.063
+   },
+   "clay_s2": {
+    "tract": 0.019
+   },
+   "aef": {
+    "tract": 0.355
+   },
+   "raw": {
+    "tract": 0.476
+   },
+   "xy": {
+    "tract": 0.061
+   },
+   "sar": {
+    "tract": 0.336,
+    "rho": 0.49
+   }
+  },
+  "ba": {
+   "satmae": {
+    "tract": 0.308
+   },
+   "prithvi": {
+    "tract": 0.085
+   },
+   "clay_s2": {
+    "tract": 0.134
+   },
+   "aef": {
+    "tract": 0.138
+   },
+   "raw": {
+    "tract": 0.399
+   },
+   "xy": {
+    "tract": -0.146
+   },
+   "sar": {
+    "tract": 0.622,
+    "rho": 0.737
+   }
+  },
+  "owner": {
+   "satmae": {
+    "tract": 0.683
+   },
+   "prithvi": {
+    "tract": 0.594
+   },
+   "clay_s2": {
+    "tract": 0.648
+   },
+   "aef": {
+    "tract": 0.661
+   },
+   "raw": {
+    "tract": 0.566
+   },
+   "xy": {
+    "tract": -0.06
+   },
+   "sar": {
+    "tract": 0.329,
+    "rho": 0.712
+   }
+  },
+  "value": {
+   "satmae": {
+    "tract": 0.38
+   },
+   "prithvi": {
+    "tract": 0.492
+   },
+   "clay_s2": {
+    "tract": 0.412
+   },
+   "aef": {
+    "tract": 0.44
+   },
+   "raw": {
+    "tract": 0.39
+   },
+   "xy": {
+    "tract": 0.066
+   },
+   "sar": {
+    "tract": 0.295,
+    "rho": 0.411
+   }
+  },
+  "density": {
+   "satmae": {
+    "tract": 0.636
+   },
+   "prithvi": {
+    "tract": 0.497
+   },
+   "clay_s2": {
+    "tract": 0.438
+   },
+   "aef": {
+    "tract": 0.831
+   },
+   "raw": {
+    "tract": 0.593
+   },
+   "xy": {
+    "tract": 0.093
+   },
+   "sar": {
+    "tract": 0.18,
+    "rho": 0.539
+   }
+  }
+ },
+ "maps": {
+  "ndvi": {
+   "actual": "probes/ndvi_actual.png",
+   "pred": {
+    "satmae": "probes/ndvi_satmae.png",
+    "prithvi": "probes/ndvi_prithvi.png",
+    "clay_s2": "probes/ndvi_clay_s2.png",
+    "aef": "probes/ndvi_aef.png"
+   }
+  },
+  "lst": {
+   "actual": "probes/lst_actual.png",
+   "pred": {
+    "satmae": "probes/lst_satmae.png",
+    "prithvi": "probes/lst_prithvi.png",
+    "clay_s2": "probes/lst_clay_s2.png",
+    "aef": "probes/lst_aef.png"
+   }
+  },
+  "elevation": {
+   "actual": "probes/elevation_actual.png",
+   "pred": {
+    "satmae": "probes/elevation_satmae.png",
+    "prithvi": "probes/elevation_prithvi.png",
+    "clay_s2": "probes/elevation_clay_s2.png",
+    "aef": "probes/elevation_aef.png"
+   }
+  },
+  "slope": {
+   "actual": "probes/slope_actual.png",
+   "pred": {
+    "satmae": "probes/slope_satmae.png",
+    "prithvi": "probes/slope_prithvi.png",
+    "clay_s2": "probes/slope_clay_s2.png",
+    "aef": "probes/slope_aef.png"
+   }
+  },
+  "impervious": {
+   "actual": "probes/impervious_actual.png",
+   "pred": {
+    "satmae": "probes/impervious_satmae.png",
+    "prithvi": "probes/impervious_prithvi.png",
+    "clay_s2": "probes/impervious_clay_s2.png",
+    "aef": "probes/impervious_aef.png"
+   }
+  },
+  "canopy": {
+   "actual": "probes/canopy_actual.png",
+   "pred": {
+    "satmae": "probes/canopy_satmae.png",
+    "prithvi": "probes/canopy_prithvi.png",
+    "clay_s2": "probes/canopy_clay_s2.png",
+    "aef": "probes/canopy_aef.png"
+   }
+  },
+  "buildings": {
+   "actual": "probes/buildings_actual.png",
+   "pred": {
+    "satmae": "probes/buildings_satmae.png",
+    "prithvi": "probes/buildings_prithvi.png",
+    "clay_s2": "probes/buildings_clay_s2.png",
+    "aef": "probes/buildings_aef.png"
+   }
+  },
+  "height": {
+   "actual": "probes/height_actual.png",
+   "pred": {
+    "satmae": "probes/height_satmae.png",
+    "prithvi": "probes/height_prithvi.png",
+    "clay_s2": "probes/height_clay_s2.png",
+    "aef": "probes/height_aef.png"
+   }
+  },
+  "income": {
+   "actual": "probes/income_actual.png",
+   "pred": {
+    "satmae": "probes/income_satmae.png",
+    "prithvi": "probes/income_prithvi.png",
+    "clay_s2": "probes/income_clay_s2.png",
+    "aef": "probes/income_aef.png"
+   }
+  },
+  "ba": {
+   "actual": "probes/ba_actual.png",
+   "pred": {
+    "satmae": "probes/ba_satmae.png",
+    "prithvi": "probes/ba_prithvi.png",
+    "clay_s2": "probes/ba_clay_s2.png",
+    "aef": "probes/ba_aef.png"
+   }
+  },
+  "owner": {
+   "actual": "probes/owner_actual.png",
+   "pred": {
+    "satmae": "probes/owner_satmae.png",
+    "prithvi": "probes/owner_prithvi.png",
+    "clay_s2": "probes/owner_clay_s2.png",
+    "aef": "probes/owner_aef.png"
+   }
+  },
+  "value": {
+   "actual": "probes/value_actual.png",
+   "pred": {
+    "satmae": "probes/value_satmae.png",
+    "prithvi": "probes/value_prithvi.png",
+    "clay_s2": "probes/value_clay_s2.png",
+    "aef": "probes/value_aef.png"
+   }
+  },
+  "density": {
+   "actual": "probes/density_actual.png",
+   "pred": {
+    "satmae": "probes/density_satmae.png",
+    "prithvi": "probes/density_prithvi.png",
+    "clay_s2": "probes/density_clay_s2.png",
+    "aef": "probes/density_aef.png"
+   }
+  }
+ },
+ "tracts": 48,
+ "block_km": 1.9
+}
